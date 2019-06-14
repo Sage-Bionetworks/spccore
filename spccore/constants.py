@@ -1,0 +1,1 @@
+DEFAULT_BASE_ENDPOINT = "http://repo-prod.prod.sagebase.org/repo/v1/"
