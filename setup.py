@@ -17,13 +17,7 @@ setuptools.setup(
     python_requires='>=3.5.*',
     install_requires=[
         'requests>=2.21.0',
-        'keyring==12.0.2',
-        'deprecated==1.2.4',
     ],
-    extras_require={
-        'boto3' : ["boto3"],
-        ':sys_platform=="linux2" or sys_platform=="linux"': ['keyrings.alt==3.1'],
-    },
 
     # test
     setup_requires=["pytest-runner"],
