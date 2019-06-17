@@ -44,10 +44,10 @@ class SynapseConnection:
     upload_file_handle("/path/to/analysis.txt", content_type="text/plain", generate_preview=False)
         Uploads a file to Synapse
 
-    download_file_handles({file_handle_id="456",
-                         object_id="syn123",
-                         object_type="FileEntity",
-                         path="~/Documents/analysis.txt"})
+    download_file_handles(download_requests={file_handle_id="456",
+                                             object_id="syn123",
+                                             object_type="FileEntity",
+                                             path="~/Documents/analysis.txt"})
         Downloads a batch of files from Synapse
 
     """
@@ -70,7 +70,7 @@ class SynapseConnection:
     def rest_get(self,
                  request_path: str,
                  *,
-                 request_parameters: dict = {}
+                 request_parameters: dict = None
                  ) -> typing.Union[dict, str]:
         """
         Performs an HTTP GET request
@@ -88,7 +88,7 @@ class SynapseConnection:
                  request_path: str,
                  request_body: dict,
                  *,
-                 request_parameters: dict = {}
+                 request_parameters: dict = None
                  ) -> typing.Union[dict, str]:
         """
         Performs an HTTP PUT request
@@ -108,7 +108,7 @@ class SynapseConnection:
                   request_path: str,
                   request_body: dict,
                   *,
-                  request_parameters: dict = {}
+                  request_parameters: dict = None
                   ) -> typing.Union[dict, str]:
         """
         Performs an HTTP POST request
@@ -127,7 +127,7 @@ class SynapseConnection:
     def rest_delete(self,
                     request_path: str,
                     *,
-                    request_parameters: dict = {}
+                    request_parameters: dict = None
                     ) -> typing.Union[dict, str]:
         """
         Performs an HTTP DELETE request
@@ -161,14 +161,14 @@ class SynapseConnection:
         """
 
     def download_file_handles(self,
-                              requests: typing.Sequence[DownloadRequest],
+                              download_requests: typing.Sequence[DownloadRequest],
                               *,
                               use_multiple_threads: bool = True
                               ) -> typing.Mapping[DownloadRequest, DownloadResult]:
         """
         Downloads a batch of files from Synapse
 
-        :param requests: the list of download requests
+        :param download_requests: the list of download requests
         :param use_multiple_threads: set to False to use single thread. Default True.
         :return: a map between the DownloadRequest and the result
         """
@@ -208,7 +208,7 @@ def _generate_request_url(endpoint: str, request_path: str) -> str:
     if endpoint is None or request_path is None:
         raise ValueError("endpoint and request_path are required.")
     if urllib_parse.urlparse(request_path).path != request_path:
-        raise ValueError("Incorrect format for request_path: %(request_path)" % {'request_path': request_path})
+        raise ValueError('Incorrect format for request_path: %(request_path)'.format(**{'request_path': request_path}))
     return endpoint + request_path
 
 
