@@ -17,6 +17,6 @@ The Synapse Python Client Core package:
 import spccore
 
 synapse_connection = spccore.get_connection()
-version = synapse_connection.rest_get("/version")
+version = synapse_connection.get("/version")
 
 ```

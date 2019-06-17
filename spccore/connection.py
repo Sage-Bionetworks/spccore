@@ -29,16 +29,16 @@ class SynapseConnection:
 
     Methods
     -------
-    rest_get("/entity/syn123", request_parameters={})
+    get("/entity/syn123", request_parameters={})
         Performs an HTTP GET request
 
-    rest_put("/entity/syn123", {id="syn123"}, request_parameters={})
+    put("/entity/syn123", {id="syn123"}, request_parameters={})
         Performs an HTTP PUT request
 
-    rest_post("/entity", {name="new_folder"}, request_parameters={})
+    post("/entity", {name="new_folder"}, request_parameters={})
         Performs an HTTP POST request
 
-    rest_delete("/entity/syn123", request_parameters={})
+    delete("/entity/syn123", request_parameters={})
         Performs an HTTP DELETE request
 
     upload_file_handle("/path/to/analysis.txt", content_type="text/plain", generate_preview=False)
@@ -67,11 +67,11 @@ class SynapseConnection:
         self.api_key = api_key
         self.session = requests.Session()
 
-    def rest_get(self,
-                 request_path: str,
-                 *,
-                 request_parameters: dict = None
-                 ) -> typing.Union[dict, str]:
+    def get(self,
+            request_path: str,
+            *,
+            request_parameters: dict = None
+            ) -> typing.Union[dict, str]:
         """
         Performs an HTTP GET request
 
@@ -84,12 +84,12 @@ class SynapseConnection:
                                                  headers=_generate_signed_headers(url),
                                                  params=request_parameters))
 
-    def rest_put(self,
-                 request_path: str,
-                 request_body: dict,
-                 *,
-                 request_parameters: dict = None
-                 ) -> typing.Union[dict, str]:
+    def put(self,
+            request_path: str,
+            request_body: dict,
+            *,
+            request_parameters: dict = None
+            ) -> typing.Union[dict, str]:
         """
         Performs an HTTP PUT request
 
@@ -104,12 +104,12 @@ class SynapseConnection:
                                                  headers=_generate_signed_headers(url),
                                                  params=request_parameters))
 
-    def rest_post(self,
-                  request_path: str,
-                  request_body: dict,
-                  *,
-                  request_parameters: dict = None
-                  ) -> typing.Union[dict, str]:
+    def post(self,
+             request_path: str,
+             request_body: dict,
+             *,
+             request_parameters: dict = None
+             ) -> typing.Union[dict, str]:
         """
         Performs an HTTP POST request
 
@@ -124,11 +124,11 @@ class SynapseConnection:
                                                   headers=_generate_signed_headers(url),
                                                   params=request_parameters))
 
-    def rest_delete(self,
-                    request_path: str,
-                    *,
-                    request_parameters: dict = None
-                    ) -> typing.Union[dict, str]:
+    def delete(self,
+               request_path: str,
+               *,
+               request_parameters: dict = None
+               ) -> typing.Union[dict, str]:
         """
         Performs an HTTP DELETE request
 
