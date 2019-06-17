@@ -65,6 +65,7 @@ ERRORS = {
 
 
 def check_status_code_and_raise_error(response: requests.Response) -> None:
+    error = None
     if 400 <= response.status_code < 500:
         error = ERRORS.get(response.status_code, SynapseError)
     if response.status_code >= 500:

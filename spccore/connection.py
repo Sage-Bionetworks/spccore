@@ -212,7 +212,12 @@ def _generate_request_url(endpoint: str, request_path: str) -> str:
     return endpoint + request_path
 
 
-def _generate_signed_headers(url: str, username: str, api_key: str, *, headers: dict = None) -> dict:
+def _generate_signed_headers(url: str,
+                             *,
+                             username: str = None,
+                             api_key: str = None,
+                             headers: dict = None
+                             ) -> dict:
     """
     Generate headers signed with the API key
 
