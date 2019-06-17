@@ -120,9 +120,9 @@ class SynapseConnection:
         """
         url = _generate_request_url(self.base_endpoint, request_path)
         return _handle_response(self.session.post(url,
-                                                 data=request_body,
-                                                 headers=_generate_signed_headers(url),
-                                                 params=request_parameters))
+                                                  data=request_body,
+                                                  headers=_generate_signed_headers(url),
+                                                  params=request_parameters))
 
     def rest_delete(self,
                     request_path: str,
@@ -140,7 +140,6 @@ class SynapseConnection:
         return _handle_response(self.session.delete(url,
                                                     headers=_generate_signed_headers(url),
                                                     params=request_parameters))
-
 
     def upload_file_handle(self,
                            path: str,
@@ -160,7 +159,6 @@ class SynapseConnection:
         :param use_multiple_threads: set to False to use single thread. Default True.
         :return: the File Handle created in Synapse
         """
-
 
     def download_file_handles(self,
                               requests: typing.Sequence[DownloadRequest],
@@ -257,6 +255,3 @@ def _handle_response(response: requests.Response) -> dict:
         return response.json()
     else:
         return response.text
-
-
-

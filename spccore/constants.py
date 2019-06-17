@@ -22,4 +22,3 @@ SYNAPSE_SIGNATURE_HEADER = 'signature'
 ISO_FORMAT = "%Y-%m-%dT%H:%M:%S.000Z"
 CONTENT_TYPE_HEADER = 'content-type'
 JSON_CONTENT_TYPE = 'application/json'
-

@@ -32,7 +32,6 @@ class DownloadRequest:
         self.path = path
 
 
-
 class DownloadResult:
     """
     A download result
@@ -43,4 +42,3 @@ class DownloadResult:
     ----------
 
     """
-    
