@@ -17,12 +17,6 @@ class DownloadRequest:
         This path can be either absolute path or relative path from where the code is executed to the download location.
     """
 
-    file_handle_id = 0
-    object_id = ""
-    object_type = ""
-    path = ""
-
-
     def __init__(self, file_handle_id: int, object_id: str, object_type: str, path: str):
         """
 
@@ -38,3 +32,15 @@ class DownloadRequest:
         self.path = path
 
 
+
+class DownloadResult:
+    """
+    A download result
+
+    ...
+
+    Attributes
+    ----------
+
+    """
+    
