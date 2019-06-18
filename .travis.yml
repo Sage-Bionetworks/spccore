@@ -59,7 +59,7 @@ before_script:
 
 
 script:
-- ls
+- ls tests/unit
 - pytest tests/unit
 - |
   if [ "${TRAVIS_PULL_REQUEST}" = "false" ];then
