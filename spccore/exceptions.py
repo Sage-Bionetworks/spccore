@@ -72,6 +72,6 @@ def check_status_code_and_raise_error(response: requests.Response) -> None:
         error = ERRORS.get(response.status_code, SynapseServerError)
     if error is not None:
         reason = response.reason
-        if reason is None:
-            reason = response.json()['reason']
+        if reason is None or reason == "":
+            reason = response.json()
         raise error(reason)
