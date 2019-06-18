@@ -1,6 +1,14 @@
 # spccore
 Synapse Python Client Core Package
 
+ CI | Branch  | Build Status
+ ---|---------|-------------
+Travis | develop | [![Build Status develop branch](https://travis-ci.com/Sage-Bionetworks/spccore.svg?branch=develop)](https://travis-ci.com/Sage-Bionetworks/spccore)
+Travis | master  | [![Build Status master branch](https://travis-ci.com/Sage-Bionetworks/spccore.svg?branch=master)](https://travis-ci.com/Sage-Bionetworks/spccore)
+AppVeyor | develop | [![AppVeyor branch](https://img.shields.io/appveyor/ci/SageBionetworks/spccore/master.svg)](https://ci.appveyor.com/project/SageBionetworks/spccore)
+AppVeyor | master | [![AppVeyor branch](https://img.shields.io/appveyor/ci/SageBionetworks/spccore/master.svg)](https://ci.appveyor.com/project/SageBionetworks/spccore)
+
+
 ## Overview
 
 The Synapse Python Client Core package:
