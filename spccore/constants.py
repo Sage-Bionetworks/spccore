@@ -9,12 +9,11 @@ SYNAPSE_DEFAULT_BASE_ENDPOINT = "http://repo-prod.prod.sagebase.org/repo/v1/"
 SYNAPSE_USER_ID_HEADER = 'userId'
 SYNAPSE_SIGNATURE_TIMESTAMP_HEADER = 'signatureTimestamp'
 SYNAPSE_SIGNATURE_HEADER = 'signature'
-SYNAPSE_USER_AGENT_HEADER = 'spccore/%(version) %{default}'\
-    .format(**{'version': __version__, 'default': requests.utils.default_user_agent()})
+SYNAPSE_USER_AGENT_HEADER = {'User-Agent': 'spccore/%(version) %{default}'.format(
+    **{'version': __version__, 'default': requests.utils.default_user_agent()})}
 
 SYNAPSE_DEFAULT_HTTP_HEADERS = {'content-type': 'application/json; charset=UTF-8',
-                                'Accept': 'application/json; charset=UTF-8',
-                                'User-Agent': SYNAPSE_USER_AGENT_HEADER}
+                                'Accept': 'application/json; charset=UTF-8'}
 
 SYNAPSE_DEFAULT_STORAGE_LOCATION_ID = 1
 

@@ -70,25 +70,31 @@ class SynapseConnection:
     def get(self,
             request_path: str,
             *,
-            request_parameters: dict = None
+            request_parameters: dict = None,
+            headers: dict = None
             ) -> typing.Union[dict, str]:
         """
         Performs an HTTP GET request
 
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_parameters: path parameters to include in this request
+        :param headers: the HTTP headers
         :return: the response body of the request
         """
         url = _generate_request_url(self.base_endpoint, request_path)
         return _handle_response(self.session.get(url,
-                                                 headers=_generate_signed_headers(url),
+                                                 headers=_generate_signed_headers(url,
+                                                                                  username=self.username,
+                                                                                  api_key=self.api_key,
+                                                                                  headers=headers),
                                                  params=request_parameters))
 
     def put(self,
             request_path: str,
             request_body: dict,
             *,
-            request_parameters: dict = None
+            request_parameters: dict = None,
+            headers: dict = None
             ) -> typing.Union[dict, str]:
         """
         Performs an HTTP PUT request
@@ -96,19 +102,24 @@ class SynapseConnection:
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_body: the request body
         :param request_parameters: path parameters to include in this request
+        :param headers: the HTTP headers
         :return: the response body of the request
         """
         url = _generate_request_url(self.base_endpoint, request_path)
         return _handle_response(self.session.put(url,
                                                  data=request_body,
-                                                 headers=_generate_signed_headers(url),
+                                                 headers=_generate_signed_headers(url,
+                                                                                  username=self.username,
+                                                                                  api_key=self.api_key,
+                                                                                  headers=headers),
                                                  params=request_parameters))
 
     def post(self,
              request_path: str,
              request_body: dict,
              *,
-             request_parameters: dict = None
+             request_parameters: dict = None,
+             headers: dict = None
              ) -> typing.Union[dict, str]:
         """
         Performs an HTTP POST request
@@ -116,29 +127,38 @@ class SynapseConnection:
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_body: the request body
         :param request_parameters: path parameters to include in this request
+        :param headers: the HTTP headers
         :return: the response body of the request
         """
         url = _generate_request_url(self.base_endpoint, request_path)
         return _handle_response(self.session.post(url,
                                                   data=request_body,
-                                                  headers=_generate_signed_headers(url),
+                                                  headers=_generate_signed_headers(url,
+                                                                                   username=self.username,
+                                                                                   api_key=self.api_key,
+                                                                                   headers=headers),
                                                   params=request_parameters))
 
     def delete(self,
                request_path: str,
                *,
-               request_parameters: dict = None
+               request_parameters: dict = None,
+               headers: dict = None
                ) -> typing.Union[dict, str]:
         """
         Performs an HTTP DELETE request
 
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_parameters: path parameters to include in this request
+        :param headers: the HTTP headers
         :return: the response body of the request
         """
         url = _generate_request_url(self.base_endpoint, request_path)
         return _handle_response(self.session.delete(url,
-                                                    headers=_generate_signed_headers(url),
+                                                    headers=_generate_signed_headers(url,
+                                                                                     username=self.username,
+                                                                                     api_key=self.api_key,
+                                                                                     headers=headers),
                                                     params=request_parameters))
 
     def upload_file_handle(self,
@@ -233,6 +253,8 @@ def _generate_signed_headers(url: str,
     if headers is None:
         headers = dict(SYNAPSE_DEFAULT_HTTP_HEADERS)
 
+    headers = _enforce_user_agent(headers)
+
     if username is None or api_key is None:
         return headers
 
@@ -260,3 +282,14 @@ def _handle_response(response: requests.Response) -> dict:
         return response.json()
     else:
         return response.text
+
+
+def _enforce_user_agent(headers: dict) -> dict:
+    """
+    Update the headers to include User-Agent header that capture the core client
+
+    :param headers: the HTTP headers to update
+    :return: the HTTP headers with the core client as User-Agent
+    """
+    headers.update(SYNAPSE_USER_AGENT_HEADER)
+    return headers
