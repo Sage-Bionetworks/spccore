@@ -4,7 +4,9 @@ from .__version__ import __version__
 
 # Synapse specific constants
 
-SYNAPSE_DEFAULT_BASE_ENDPOINT = "http://repo-prod.prod.sagebase.org/repo/v1/"
+SYNAPSE_DEFAULT_REPO_ENDPOINT = "http://repo-prod.prod.sagebase.org/repo/v1"
+SYNAPSE_DEFAULT_AUTH_ENDPOINT = "http://repo-prod.prod.sagebase.org/auth/v1"
+SYNAPSE_DEFAULT_FILE_ENDPOINT = "http://repo-prod.prod.sagebase.org/file/v1"
 
 SYNAPSE_USER_ID_HEADER = 'userId'
 SYNAPSE_SIGNATURE_TIMESTAMP_HEADER = 'signatureTimestamp'

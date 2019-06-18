@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+import json
 import requests
 import time
 import typing
@@ -53,24 +54,34 @@ class SynapseConnection:
     """
 
     def __init__(self, *,
-                 base_endpoint: str = SYNAPSE_DEFAULT_BASE_ENDPOINT,
+                 repo_endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+                 auth_endpoint: str = SYNAPSE_DEFAULT_AUTH_ENDPOINT,
+                 file_endpoint: str = SYNAPSE_DEFAULT_FILE_ENDPOINT,
                  username: str = None,
                  api_key: str = None):
         """
 
-        :param base_endpoint: the Synapse server base endpoint
+        :param repo_endpoint: the Synapse server repo endpoint
+        :param auth_endpoint: the Synapse server auth endpoint
+        :param file_endpoint: the Synapse server file endpoint
         :param username: the Synapse username
         :param api_key: the Synapse API key
         """
-        self.base_endpoint = base_endpoint
+        self.repo_endpoint = repo_endpoint
+        self.auth_endpoint = auth_endpoint
+        self.file_endpoint = file_endpoint
         self.username = username
-        self.api_key = api_key
+        if api_key is not None:
+            self.api_key = base64.b64decode(api_key)
+        else:
+            self.api_key = None
         self.session = requests.Session()
 
     def get(self,
             request_path: str,
             *,
             request_parameters: dict = None,
+            endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
             headers: dict = None
             ) -> typing.Union[dict, str]:
         """
@@ -78,10 +89,11 @@ class SynapseConnection:
 
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_parameters: path parameters to include in this request
+        :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
         """
-        url = _generate_request_url(self.base_endpoint, request_path)
+        url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.get(url,
                                                  headers=_generate_signed_headers(url,
                                                                                   username=self.username,
@@ -94,6 +106,7 @@ class SynapseConnection:
             request_body: dict,
             *,
             request_parameters: dict = None,
+            endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
             headers: dict = None
             ) -> typing.Union[dict, str]:
         """
@@ -102,12 +115,13 @@ class SynapseConnection:
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_body: the request body
         :param request_parameters: path parameters to include in this request
+        :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
         """
-        url = _generate_request_url(self.base_endpoint, request_path)
+        url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.put(url,
-                                                 data=request_body,
+                                                 data=json.dumps(request_body),
                                                  headers=_generate_signed_headers(url,
                                                                                   username=self.username,
                                                                                   api_key=self.api_key,
@@ -119,6 +133,7 @@ class SynapseConnection:
              request_body: dict,
              *,
              request_parameters: dict = None,
+             endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
              headers: dict = None
              ) -> typing.Union[dict, str]:
         """
@@ -127,12 +142,13 @@ class SynapseConnection:
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_body: the request body
         :param request_parameters: path parameters to include in this request
+        :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
         """
-        url = _generate_request_url(self.base_endpoint, request_path)
+        url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.post(url,
-                                                  data=request_body,
+                                                  data=json.dumps(request_body),
                                                   headers=_generate_signed_headers(url,
                                                                                    username=self.username,
                                                                                    api_key=self.api_key,
@@ -143,6 +159,7 @@ class SynapseConnection:
                request_path: str,
                *,
                request_parameters: dict = None,
+               endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
                headers: dict = None
                ) -> typing.Union[dict, str]:
         """
@@ -150,10 +167,11 @@ class SynapseConnection:
 
         :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
         :param request_parameters: path parameters to include in this request
+        :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
         """
-        url = _generate_request_url(self.base_endpoint, request_path)
+        url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.delete(url,
                                                     headers=_generate_signed_headers(url,
                                                                                      username=self.username,
@@ -198,21 +216,29 @@ ANONYMOUS_CONNECTION = SynapseConnection()
 
 
 def get_connection(*,
-                   base_endpoint: str = SYNAPSE_DEFAULT_BASE_ENDPOINT,
+                   repo_endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+                   auth_endpoint: str = SYNAPSE_DEFAULT_AUTH_ENDPOINT,
+                   file_endpoint: str = SYNAPSE_DEFAULT_FILE_ENDPOINT,
                    username: str = None,
                    api_key: str = None
                    ) -> SynapseConnection:
     """
     Get a connection to the Synapse server
 
-    :param base_endpoint: the Synapse server base endpoint
+    :param repo_endpoint: the Synapse server repo endpoint
+    :param auth_endpoint: the Synapse server auth endpoint
+    :param file_endpoint: the Synapse server file endpoint
     :param username: the Synapse username
     :param api_key: the Synapse API key
     :return: a Synapse connection
     """
     if username is None or api_key is None:
         return ANONYMOUS_CONNECTION
-    return SynapseConnection(base_endpoint=base_endpoint, username=username, api_key=api_key)
+    return SynapseConnection(repo_endpoint=repo_endpoint,
+                             auth_endpoint=auth_endpoint,
+                             file_endpoint=file_endpoint,
+                             username=username,
+                             api_key=api_key)
 
 
 # Helper functions
@@ -235,7 +261,7 @@ def _generate_request_url(endpoint: str, request_path: str) -> str:
 def _generate_signed_headers(url: str,
                              *,
                              username: str = None,
-                             api_key: str = None,
+                             api_key: bytes = None,
                              headers: dict = None
                              ) -> dict:
     """
