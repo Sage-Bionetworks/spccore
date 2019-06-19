@@ -12,16 +12,6 @@ matrix:
       dist: xenial
       sudo: required
 
-    - os: osx
-      language: generic
-      env: PY_VERSION=3.5.3
-    - os: osx
-      language: generic
-      env: PY_VERSION=3.6.2
-    - os: osx
-      language: generic
-      env: PY_VERSION=3.7.1
-
 before_install:
 - |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
