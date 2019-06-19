@@ -30,7 +30,7 @@ def get_test_user_connection() -> SynapseConnection:
     :return: the test user's connection to Synapse
     """
     repo, auth, file = get_test_endpoints()
-    username, password = _get_test_credentials()
+    username, password = get_test_credentials()
     api_key = _get_api_key(repo, auth, file, username, password)
     return get_connection(repo_endpoint=repo,
                           auth_endpoint=auth,
@@ -52,7 +52,7 @@ def get_test_endpoints() -> (str, str, str):
            config.get(DEFAULT_CONFIG_ENDPOINT_SECTION, DEFAULT_CONFIG_FILE_ENDPOINT_OPT)
 
 
-def _get_test_credentials() -> (str, str):
+def get_test_credentials() -> (str, str):
     """
     Read ~/.synapseConfig and retrieve test username and password
 
@@ -60,7 +60,7 @@ def _get_test_credentials() -> (str, str):
     """
     config = configparser.ConfigParser()
     config.read(DEFAULT_CONFIG_PATH)
-    return config.get(DEFAULT_CONFIG_AUTH_SECTION, DEFAULT_CONFIG_USERNAME_OPT), \
+    return config.get(DEFAULT_CONFIG_AUTH_SECTION, DEFAULT_CONFIG_USERNAME_OPT),\
            config.get(DEFAULT_CONFIG_AUTH_SECTION, DEFAULT_CONFIG_PASSWORD_OPT)
 
 

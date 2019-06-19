@@ -305,7 +305,7 @@ def _handle_response(response: requests.Response) -> dict:
     """
     check_status_code_and_raise_error(response)
     content_type = response.headers.get(CONTENT_TYPE_HEADER, None)
-    if content_type.lower().strip().startswith(JSON_CONTENT_TYPE):
+    if content_type is not None and content_type.lower().strip().startswith(JSON_CONTENT_TYPE):
         return response.json()
     else:
         return response.text
