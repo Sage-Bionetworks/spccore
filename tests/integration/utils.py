@@ -19,7 +19,7 @@ def get_anonymous_connection() -> SynapseConnection:
 
     :return: the dev stack endpoint
     """
-    repo, auth, file = _get_test_endpoints()
+    repo, auth, file = get_test_endpoints()
     return get_connection(repo_endpoint=repo, auth_endpoint=auth, file_endpoint=file)
 
 
@@ -29,9 +29,9 @@ def get_test_user_connection() -> SynapseConnection:
 
     :return: the test user's connection to Synapse
     """
-    repo, auth, file = _get_test_endpoints()
+    repo, auth, file = get_test_endpoints()
     username, password = _get_test_credentials()
-    api_key = _get_api_key(auth, username, password)
+    api_key = _get_api_key(repo, auth, file, username, password)
     return get_connection(repo_endpoint=repo,
                           auth_endpoint=auth,
                           file_endpoint=file,
@@ -39,7 +39,7 @@ def get_test_user_connection() -> SynapseConnection:
                           api_key=api_key)
 
 
-def _get_test_endpoints() -> (str, str, str):
+def get_test_endpoints() -> (str, str, str):
     """
     Read ~/.synapseConfig and retrieve endpoint, test username and password
 
@@ -64,17 +64,24 @@ def _get_test_credentials() -> (str, str):
            config.get(DEFAULT_CONFIG_AUTH_SECTION, DEFAULT_CONFIG_PASSWORD_OPT)
 
 
-def _get_api_key(auth_endpoint: str, username: str, password: str) -> str:
+def _get_api_key(repo_endpoint:str,
+                 auth_endpoint: str,
+                 file_endpoint: str,
+                 username: str,
+                 password: str) -> str:
     """
     Retrieve test user API key
 
     :param repo_endpoint: the Synapse server repository endpoint
     :param auth_endpoint: the Synapse server authentication endpoint
+    :param file_endpoint: the Synapse server file endpoint
     :param username: the Synapse username
     :param password: the Synapse user's password
     :return: the Synapse user's API key
     """
-    anonymous_connection = get_connection()
+    anonymous_connection = get_connection(repo_endpoint=repo_endpoint,
+                                          auth_endpoint=auth_endpoint,
+                                          file_endpoint=file_endpoint)
     request_body = {'email': username, 'password': password}
     session_token = anonymous_connection.post('/session',
                                               endpoint=auth_endpoint,

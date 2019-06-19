@@ -71,17 +71,14 @@ class SynapseConnection:
         self.auth_endpoint = auth_endpoint
         self.file_endpoint = file_endpoint
         self.username = username
-        if api_key is not None:
-            self.api_key = base64.b64decode(api_key)
-        else:
-            self.api_key = None
+        self.api_key = api_key
         self.session = requests.Session()
 
     def get(self,
             request_path: str,
             *,
             request_parameters: dict = None,
-            endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+            endpoint: str = None,
             headers: dict = None
             ) -> typing.Union[dict, str]:
         """
@@ -93,6 +90,8 @@ class SynapseConnection:
         :param headers: the HTTP headers
         :return: the response body of the request
         """
+        if endpoint is None:
+            endpoint = self.repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.get(url,
                                                  headers=_generate_signed_headers(url,
@@ -106,7 +105,7 @@ class SynapseConnection:
             request_body: dict,
             *,
             request_parameters: dict = None,
-            endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+            endpoint: str = None,
             headers: dict = None
             ) -> typing.Union[dict, str]:
         """
@@ -119,6 +118,8 @@ class SynapseConnection:
         :param headers: the HTTP headers
         :return: the response body of the request
         """
+        if endpoint is None:
+            endpoint = self.repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.put(url,
                                                  data=json.dumps(request_body),
@@ -133,7 +134,7 @@ class SynapseConnection:
              request_body: dict,
              *,
              request_parameters: dict = None,
-             endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+             endpoint: str = None,
              headers: dict = None
              ) -> typing.Union[dict, str]:
         """
@@ -146,6 +147,8 @@ class SynapseConnection:
         :param headers: the HTTP headers
         :return: the response body of the request
         """
+        if endpoint is None:
+            endpoint = self.repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.post(url,
                                                   data=json.dumps(request_body),
@@ -159,7 +162,7 @@ class SynapseConnection:
                request_path: str,
                *,
                request_parameters: dict = None,
-               endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+               endpoint: str = None,
                headers: dict = None
                ) -> typing.Union[dict, str]:
         """
@@ -171,6 +174,8 @@ class SynapseConnection:
         :param headers: the HTTP headers
         :return: the response body of the request
         """
+        if endpoint is None:
+            endpoint = self.repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self.session.delete(url,
                                                     headers=_generate_signed_headers(url,
@@ -212,9 +217,6 @@ class SynapseConnection:
         """
 
 
-ANONYMOUS_CONNECTION = SynapseConnection()
-
-
 def get_connection(*,
                    repo_endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
                    auth_endpoint: str = SYNAPSE_DEFAULT_AUTH_ENDPOINT,
@@ -232,8 +234,6 @@ def get_connection(*,
     :param api_key: the Synapse API key
     :return: a Synapse connection
     """
-    if username is None or api_key is None:
-        return ANONYMOUS_CONNECTION
     return SynapseConnection(repo_endpoint=repo_endpoint,
                              auth_endpoint=auth_endpoint,
                              file_endpoint=file_endpoint,
@@ -254,14 +254,14 @@ def _generate_request_url(endpoint: str, request_path: str) -> str:
     if endpoint is None or request_path is None:
         raise ValueError("endpoint and request_path are required.")
     if urllib_parse.urlparse(request_path).path != request_path:
-        raise ValueError('Incorrect format for request_path: %(request_path)'.format(**{'request_path': request_path}))
+        raise ValueError('Incorrect format for request_path: {request_path}'.format(**{'request_path': request_path}))
     return endpoint + request_path
 
 
 def _generate_signed_headers(url: str,
                              *,
                              username: str = None,
-                             api_key: bytes = None,
+                             api_key: str = None,
                              headers: dict = None
                              ) -> dict:
     """
@@ -287,8 +287,9 @@ def _generate_signed_headers(url: str,
     sig_timestamp = time.strftime(ISO_FORMAT, time.gmtime())
     url = urllib_parse.urlparse(url).path
     sig_data = username + url + sig_timestamp
-    signature = base64.b64encode(hmac.new(api_key, sig_data.encode('utf-8'), hashlib.sha1).digest())
-
+    signature = base64.b64encode(hmac.new(base64.b64decode(api_key),
+                                          sig_data.encode('utf-8'),
+                                          hashlib.sha1).digest())
     headers.update({SYNAPSE_USER_ID_HEADER: username,
                     SYNAPSE_SIGNATURE_TIMESTAMP_HEADER: sig_timestamp,
                     SYNAPSE_SIGNATURE_HEADER: signature})
