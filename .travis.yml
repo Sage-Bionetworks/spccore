@@ -32,11 +32,8 @@ install:
 
 before_script:
 - | # decrypt credentials used in tests
-  if [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-    openssl aes-256-cbc -K $encrypted_d17283647768_key -iv $encrypted_d17283647768_iv -in test.synapseConfig.enc -out test.synapseConfig -d
-    mv test.synapseConfig ~/.synapseConfig
-  fi
-
+  openssl aes-256-cbc -K $encrypted_d17283647768_key -iv $encrypted_d17283647768_iv -in test.synapseConfig.enc -out test.synapseConfig -d
+  mv test.synapseConfig ~/.synapseConfig
 
 script:
 - pytest tests
