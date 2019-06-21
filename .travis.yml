@@ -12,20 +12,6 @@ matrix:
       dist: xenial
       sudo: required
 
-before_install:
-- |
-  if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-    brew update
-    brew outdated pyenv || brew upgrade pyenv
-    brew install pyenv-virtualenv
-    pyenv install $PY_VERSION
-    export PYENV_VERSION=$PY_VERSION
-    export PATH="/Users/travis/.pyenv/shims:${PATH}"
-    pyenv-virtualenv venv
-    source venv/bin/activate
-    pip install pytest
-  fi
-
 install:
 - pip install -U setuptools
 - python setup.py install
@@ -36,7 +22,6 @@ before_script:
     openssl aes-256-cbc -K $encrypted_d17283647768_key -iv $encrypted_d17283647768_iv -in test.synapseConfig.enc -out test.synapseConfig -d
     mv test.synapseConfig ~/.synapseConfig
   fi
-
 
 script:
 - pytest tests/unit
