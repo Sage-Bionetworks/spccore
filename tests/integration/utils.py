@@ -12,6 +12,8 @@ DEFAULT_CONFIG_REPO_ENDPOINT_OPT = "repoEndpoint"
 DEFAULT_CONFIG_AUTH_ENDPOINT_OPT = "authEndpoint"
 DEFAULT_CONFIG_FILE_ENDPOINT_OPT = "fileHandleEndpoint"
 
+_config = None
+
 
 def get_anonymous_connection() -> SynapseBaseClient:
     """
@@ -45,8 +47,7 @@ def get_test_endpoints() -> (str, str, str):
 
     :return: repo, auth, and file endpoints
     """
-    config = configparser.ConfigParser()
-    config.read(DEFAULT_CONFIG_PATH)
+    config = _get_config()
     return config.get(DEFAULT_CONFIG_ENDPOINT_SECTION, DEFAULT_CONFIG_REPO_ENDPOINT_OPT), \
            config.get(DEFAULT_CONFIG_ENDPOINT_SECTION, DEFAULT_CONFIG_AUTH_ENDPOINT_OPT), \
            config.get(DEFAULT_CONFIG_ENDPOINT_SECTION, DEFAULT_CONFIG_FILE_ENDPOINT_OPT)
@@ -58,8 +59,7 @@ def get_test_credentials() -> (str, str):
 
     :return: endpoint, username and api_key
     """
-    config = configparser.ConfigParser()
-    config.read(DEFAULT_CONFIG_PATH)
+    config = _get_config()
     return config.get(DEFAULT_CONFIG_AUTH_SECTION, DEFAULT_CONFIG_USERNAME_OPT),\
            config.get(DEFAULT_CONFIG_AUTH_SECTION, DEFAULT_CONFIG_PASSWORD_OPT)
 
@@ -92,3 +92,11 @@ def _get_api_key(repo_endpoint:str,
                                     endpoint=auth_endpoint,
                                     headers=headers
                                     )['secretKey']
+
+
+def _get_config():
+    global _config
+    if _config is None:
+        _config = configparser.ConfigParser()
+        _config.read(DEFAULT_CONFIG_PATH)
+    return _config

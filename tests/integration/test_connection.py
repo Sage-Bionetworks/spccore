@@ -4,18 +4,18 @@ from tests.integration.utils import *
 
 def test_anonymous_connection_endpoints():
     anonymous_connect = get_anonymous_connection()
-    repo, auth, file = get_test_endpoints()
-    assert repo == anonymous_connect._default_repo_endpoint
-    assert auth == anonymous_connect._default_auth_endpoint
-    assert file == anonymous_connect._default_file_endpoint
+    repo_endpoint, auth_endpoint, file_endpoint = get_test_endpoints()
+    assert repo_endpoint == anonymous_connect._default_repo_endpoint
+    assert auth_endpoint == anonymous_connect._default_auth_endpoint
+    assert file_endpoint == anonymous_connect._default_file_endpoint
 
 
 def test_user_connection_endpoints():
     synapse_connection = get_test_user_connection()
-    repo, auth, file = get_test_endpoints()
-    assert repo == synapse_connection._default_repo_endpoint
-    assert auth == synapse_connection._default_auth_endpoint
-    assert file == synapse_connection._default_file_endpoint
+    repo_endpoint, auth_endpoint, file_endpoint = get_test_endpoints()
+    assert repo_endpoint == synapse_connection._default_repo_endpoint
+    assert auth_endpoint == synapse_connection._default_auth_endpoint
+    assert file_endpoint == synapse_connection._default_file_endpoint
 
 
 def test_anonymous_connection_get():
@@ -37,6 +37,7 @@ def test_anonymous_connection_post():
 def test_anonymous_connection_put():
     anonymous_connect = get_anonymous_connection()
     _, auth, _ = get_test_endpoints()
+    # Synapse does not have any PUT methods accessible by anonymous users
     with pytest.raises(SynapseUnauthorizedError):
         anonymous_connect.put("/session", request_body={'sessionToken': 'fake'}, endpoint=auth)
 
