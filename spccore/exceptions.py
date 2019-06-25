@@ -1,51 +1,53 @@
 import requests
 
 
-class SynapseError(Exception):
+class SynapseClientError(Exception):
     """Exception thrown by the client"""
+    def __init__(self, message: str, error_code: int):
+        """
+        :param message: The reason why this error is raised
+        :param error_code: The error code from Synapse backend
+        """
+        self.message = message
+        self.error_code = error_code
 
-
-class SynapseBadRequestError(SynapseError):
+class SynapseBadRequestError(SynapseClientError):
     """Synapse Bad Request Error"""
 
 
-class SynapseUnauthorizedError(SynapseError):
+class SynapseUnauthorizedError(SynapseClientError):
     """Synapse Unauthorized Error"""
 
 
-class SynapseNotFoundError(SynapseError):
+class SynapseNotFoundError(SynapseClientError):
     """Synapse Not Found Error"""
 
 
-class SynapseConflictError(SynapseError):
+class SynapseConflictError(SynapseClientError):
     """Synapse Conflict Error"""
 
 
-class SynapseDeprecatedError(SynapseError):
+class SynapseDeprecatedError(SynapseClientError):
     """Synapse Deprecated Error"""
 
 
-class SynapsePreconditionFailedError(SynapseError):
+class SynapsePreconditionFailedError(SynapseClientError):
     """Synapse Precondition Failed Error"""
 
 
-class SynapseLockedError(SynapseError):
+class SynapseLockedError(SynapseClientError):
     """Synapse Locked Error"""
 
 
-class SynapseTooManyRequestError(SynapseError):
+class SynapseTooManyRequestError(SynapseClientError):
     """Synapse Too Many Request Error"""
 
 
-class SynapseServerError(SynapseError):
+class SynapseServerError(SynapseClientError):
     """Synapse Server Error"""
 
 
-class SynapseServerError(SynapseError):
-    """Synapse Server Error"""
-
-
-class SynapseTemporarilyUnavailableError(SynapseError):
+class SynapseTemporarilyUnavailableError(SynapseClientError):
     """Synapse Temporarily Unavailable Error"""
 
 
@@ -67,11 +69,14 @@ ERRORS = {
 def check_status_code_and_raise_error(response: requests.Response) -> None:
     error = None
     if 400 <= response.status_code < 500:
-        error = ERRORS.get(response.status_code, SynapseError)
+        error = ERRORS.get(response.status_code, SynapseClientError)
     if response.status_code >= 500:
         error = ERRORS.get(response.status_code, SynapseServerError)
     if error is not None:
         reason = response.reason
-        if reason is None or reason == "":
-            reason = response.json()
-        raise error(reason)
+        if (reason is None or reason == "") and 'reason' in response.json():
+            reason = response.json()['reason']
+        error_code = None
+        if 'errorCode' in response.json():
+            error_code = response.json()['errorCode']
+        raise error(message=reason, error_code=error_code)
