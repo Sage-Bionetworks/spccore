@@ -9,24 +9,14 @@ import urllib.parse as urllib_parse
 from .constants import *
 from .download import *
 from .exceptions import *
+from .utils import *
 
 
-class SynapseConnection:
+class SynapseBaseClient:
     """
-    A connection to Synapse backend.
+    A base client object that manages a connection to the Synapse backend.
 
     ...
-
-    Attributes
-    ----------
-    base_endpoint : str
-        the Synapse server base endpoint
-    username: str
-        the user's username
-    api_key : str
-        the user's credentials
-    session : requests.Session
-        a requests' Session
 
     Methods
     -------
@@ -67,12 +57,18 @@ class SynapseConnection:
         :param username: the Synapse username
         :param api_key: the Synapse API key
         """
-        self.repo_endpoint = repo_endpoint
-        self.auth_endpoint = auth_endpoint
-        self.file_endpoint = file_endpoint
-        self.username = username
-        self.api_key = api_key
-        self.session = requests.Session()
+        validate_type(str, repo_endpoint, "repo_endpoint")
+        validate_type(str, auth_endpoint, "auth_endpoint")
+        validate_type(str, file_endpoint, "file_endpoint")
+        validate_type(str, username, "username")
+        validate_type(str, api_key, "api_key")
+
+        self._default_repo_endpoint = repo_endpoint
+        self._default_auth_endpoint = auth_endpoint
+        self._default_file_endpoint = file_endpoint
+        self._username = username
+        self._api_key = base64.b64decode(api_key)
+        self._requests_session = requests.Session()
 
     def get(self,
             request_path: str,
@@ -91,14 +87,14 @@ class SynapseConnection:
         :return: the response body of the request
         """
         if endpoint is None:
-            endpoint = self.repo_endpoint
+            endpoint = self._default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
-        return _handle_response(self.session.get(url,
-                                                 headers=_generate_signed_headers(url,
-                                                                                  username=self.username,
-                                                                                  api_key=self.api_key,
-                                                                                  headers=headers),
-                                                 params=request_parameters))
+        return _handle_response(self._requests_session.get(url,
+                                                           headers=_generate_signed_headers(url,
+                                                                                            username=self._username,
+                                                                                            api_key=self._api_key,
+                                                                                            headers=headers),
+                                                           params=request_parameters))
 
     def put(self,
             request_path: str,
@@ -119,15 +115,15 @@ class SynapseConnection:
         :return: the response body of the request
         """
         if endpoint is None:
-            endpoint = self.repo_endpoint
+            endpoint = self._default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
-        return _handle_response(self.session.put(url,
-                                                 data=json.dumps(request_body),
-                                                 headers=_generate_signed_headers(url,
-                                                                                  username=self.username,
-                                                                                  api_key=self.api_key,
-                                                                                  headers=headers),
-                                                 params=request_parameters))
+        return _handle_response(self._requests_session.put(url,
+                                                           data=json.dumps(request_body),
+                                                           headers=_generate_signed_headers(url,
+                                                                                            username=self._username,
+                                                                                            api_key=self._api_key,
+                                                                                            headers=headers),
+                                                           params=request_parameters))
 
     def post(self,
              request_path: str,
@@ -148,15 +144,15 @@ class SynapseConnection:
         :return: the response body of the request
         """
         if endpoint is None:
-            endpoint = self.repo_endpoint
+            endpoint = self._default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
-        return _handle_response(self.session.post(url,
-                                                  data=json.dumps(request_body),
-                                                  headers=_generate_signed_headers(url,
-                                                                                   username=self.username,
-                                                                                   api_key=self.api_key,
-                                                                                   headers=headers),
-                                                  params=request_parameters))
+        return _handle_response(self._requests_session.post(url,
+                                                            data=json.dumps(request_body),
+                                                            headers=_generate_signed_headers(url,
+                                                                                             username=self._username,
+                                                                                             api_key=self._api_key,
+                                                                                             headers=headers),
+                                                            params=request_parameters))
 
     def delete(self,
                request_path: str,
@@ -175,14 +171,14 @@ class SynapseConnection:
         :return: the response body of the request
         """
         if endpoint is None:
-            endpoint = self.repo_endpoint
+            endpoint = self._default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
-        return _handle_response(self.session.delete(url,
-                                                    headers=_generate_signed_headers(url,
-                                                                                     username=self.username,
-                                                                                     api_key=self.api_key,
-                                                                                     headers=headers),
-                                                    params=request_parameters))
+        return _handle_response(self._requests_session.delete(url,
+                                                              headers=_generate_signed_headers(url,
+                                                                                               username=self._username,
+                                                                                               api_key=self._api_key,
+                                                                                               headers=headers),
+                                                              params=request_parameters))
 
     def upload_file_handle(self,
                            path: str,
@@ -217,15 +213,17 @@ class SynapseConnection:
         """
 
 
-def get_connection(*,
-                   repo_endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
-                   auth_endpoint: str = SYNAPSE_DEFAULT_AUTH_ENDPOINT,
-                   file_endpoint: str = SYNAPSE_DEFAULT_FILE_ENDPOINT,
-                   username: str = None,
-                   api_key: str = None
-                   ) -> SynapseConnection:
+def get_base_client(*,
+                    repo_endpoint: str = SYNAPSE_DEFAULT_REPO_ENDPOINT,
+                    auth_endpoint: str = SYNAPSE_DEFAULT_AUTH_ENDPOINT,
+                    file_endpoint: str = SYNAPSE_DEFAULT_FILE_ENDPOINT,
+                    username: str = None,
+                    api_key: str = None
+                    ) -> SynapseBaseClient:
     """
-    Get a connection to the Synapse server
+    Get the base Synapse client.
+    If username and api_key are provided, the client will sign all request using the provided api_key.
+    Otherwise, all requests will be sent anonymously.
 
     :param repo_endpoint: the Synapse server repo endpoint
     :param auth_endpoint: the Synapse server auth endpoint
@@ -234,7 +232,7 @@ def get_connection(*,
     :param api_key: the Synapse API key
     :return: a Synapse connection
     """
-    return SynapseConnection(repo_endpoint=repo_endpoint,
+    return SynapseBaseClient(repo_endpoint=repo_endpoint,
                              auth_endpoint=auth_endpoint,
                              file_endpoint=file_endpoint,
                              username=username,
@@ -261,7 +259,7 @@ def _generate_request_url(endpoint: str, request_path: str) -> str:
 def _generate_signed_headers(url: str,
                              *,
                              username: str = None,
-                             api_key: str = None,
+                             api_key: bytes = None,
                              headers: dict = None
                              ) -> dict:
     """
@@ -287,7 +285,7 @@ def _generate_signed_headers(url: str,
     sig_timestamp = time.strftime(ISO_FORMAT, time.gmtime())
     url = urllib_parse.urlparse(url).path
     sig_data = username + url + sig_timestamp
-    signature = base64.b64encode(hmac.new(base64.b64decode(api_key),
+    signature = base64.b64encode(hmac.new(api_key,
                                           sig_data.encode('utf-8'),
                                           hashlib.sha1).digest())
     headers.update({SYNAPSE_USER_ID_HEADER: username,
@@ -296,7 +294,7 @@ def _generate_signed_headers(url: str,
     return headers
 
 
-def _handle_response(response: requests.Response) -> dict:
+def _handle_response(response: requests.Response) -> typing.Union[dict, str]:
     """
     Handle the requests' Response
 
