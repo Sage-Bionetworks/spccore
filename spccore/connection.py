@@ -67,7 +67,7 @@ class SynapseBaseClient:
         self._default_auth_endpoint = auth_endpoint
         self._default_file_endpoint = file_endpoint
         self._username = username
-        self._api_key = base64.b64decode(api_key)
+        self._api_key = base64.b64decode(api_key) if api_key is not None else None
         self._requests_session = requests.Session()
 
     def get(self,
