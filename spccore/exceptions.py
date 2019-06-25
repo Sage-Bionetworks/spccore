@@ -3,7 +3,7 @@ import requests
 
 class SynapseClientError(Exception):
     """Exception thrown by the client"""
-    def __init__(self, message: str, error_code: int):
+    def __init__(self, *, message: str = None, error_code: int = None):
         """
         :param message: The reason why this error is raised
         :param error_code: The error code from Synapse backend

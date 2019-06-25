@@ -1,19 +1,19 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from spccore.exceptions import *
 
 
 def test_check_status_code_and_raise_error_2xx():
-    response = requests.Response()
+    response = Mock(requests.Response)
     response.status_code = 200
     check_status_code_and_raise_error(response)
 
 
 def test_check_status_code_and_raise_error_4xx_with_reason():
-    response = requests.Response()
+    response = Mock(requests.Response)
     response.status_code = 400
     response.reason = "some reason"
     json = {}
-    with patch.object(requests.Response, "json", return_value=json):
+    with patch.object(response, "json", return_value=json):
         try:
             check_status_code_and_raise_error(response)
         except SynapseClientError as e:
@@ -23,12 +23,12 @@ def test_check_status_code_and_raise_error_4xx_with_reason():
 
 
 def test_check_status_code_and_raise_error_4xx_with_json():
-    response = requests.Response()
+    response = Mock(requests.Response)
     response.status_code = 401
     response.reason = ""
     reason = 'some reason'
     json = {'reason': reason}
-    with patch.object(requests.Response, "json", return_value=json):
+    with patch.object(response, "json", return_value=json):
         try:
             check_status_code_and_raise_error(response)
         except SynapseClientError as e:
@@ -38,13 +38,13 @@ def test_check_status_code_and_raise_error_4xx_with_json():
 
 
 def test_check_status_code_and_raise_error_5xx_with_error_code():
-    response = requests.Response()
+    response = Mock(requests.Response)
     response.status_code = 503
     response.reason = ""
     reason = 'some reason'
     error_code = 10
     json = {'reason': reason, 'errorCode': error_code}
-    with patch.object(requests.Response, "json", return_value=json):
+    with patch.object(response, "json", return_value=json):
         try:
             check_status_code_and_raise_error(response)
         except SynapseClientError as e:
@@ -54,13 +54,13 @@ def test_check_status_code_and_raise_error_5xx_with_error_code():
 
 
 def test_check_status_code_and_raise_error_unknown_4xx():
-    response = requests.Response()
+    response = Mock(requests.Response)
     response.status_code = 418
     response.reason = ""
     reason = 'some reason'
     error_code = 10
     json = {'reason': reason, 'errorCode': error_code}
-    with patch.object(requests.Response, "json", return_value=json):
+    with patch.object(response, "json", return_value=json):
         try:
             check_status_code_and_raise_error(response)
         except SynapseClientError as e:
@@ -70,13 +70,13 @@ def test_check_status_code_and_raise_error_unknown_4xx():
 
 
 def test_check_status_code_and_raise_error_unknown_5xx():
-    response = requests.Response()
+    response = Mock(requests.Response)
     response.status_code = 501
     response.reason = ""
     reason = 'some reason'
     error_code = 10
     json = {'reason': reason, 'errorCode': error_code}
-    with patch.object(requests.Response, "json", return_value=json):
+    with patch.object(response, "json", return_value=json):
         try:
             check_status_code_and_raise_error(response)
         except SynapseClientError as e:

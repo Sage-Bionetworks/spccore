@@ -1,6 +1,6 @@
 import configparser
 import os
-from spccore.connection import *
+from spccore.baseclient import *
 
 
 DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser('~'), '.synapseConfig')

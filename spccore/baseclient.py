@@ -2,7 +2,6 @@ import base64
 import hashlib
 import hmac
 import json
-import requests
 import time
 import typing
 import urllib.parse as urllib_parse
