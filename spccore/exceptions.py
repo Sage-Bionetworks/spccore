@@ -3,13 +3,14 @@ import requests
 
 class SynapseClientError(Exception):
     """Exception thrown by the client"""
-    def __init__(self, *, message: str = None, error_code: int = None):
+    def __init__(self, *, message: str = None, error_code: str = None):
         """
         :param message: The reason why this error is raised
         :param error_code: The error code from Synapse backend
         """
         self.message = message
         self.error_code = error_code
+
 
 class SynapseBadRequestError(SynapseClientError):
     """Synapse Bad Request Error"""

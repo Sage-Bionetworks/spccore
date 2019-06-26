@@ -29,34 +29,40 @@ def test__enforce_user_agent_does_not_effect_other_headers():
 # _handle_response
 
 def test__handle_response_error():
-    with patch('spccore.baseclient.check_status_code_and_raise_error', side_effect = SynapseBadRequestError()), \
+    response = requests.Response()
+    with patch('spccore.baseclient.check_status_code_and_raise_error',
+               side_effect=SynapseBadRequestError()) as mock_check_status_func, \
          pytest.raises(SynapseBadRequestError):
-        _handle_response(requests.Response())
+        _handle_response(response)
+        mock_check_status_func.assert_called_once_with(response)
 
 
 def test__handle_response_none_content_type():
     response = Mock(requests.Response)
     response.headers = {}
     response.text = "some text"
-    with patch('spccore.baseclient.check_status_code_and_raise_error'):
+    with patch('spccore.baseclient.check_status_code_and_raise_error') as mock_check_status_func:
         assert _handle_response(response) == response.text
+        mock_check_status_func.assert_called_once_with(response)
 
 
 def test__handle_response_with_plain_text_content_type():
     response = Mock(requests.Response)
     response.headers = {CONTENT_TYPE_HEADER: 'text/plain'}
     response.text = "some text"
-    with patch('spccore.baseclient.check_status_code_and_raise_error'):
+    with patch('spccore.baseclient.check_status_code_and_raise_error') as mock_check_status_func:
         assert _handle_response(response) == response.text
+        mock_check_status_func.assert_called_once_with(response)
 
 
 def test__handle_response_with_json_content_type():
     response = Mock(requests.Response)
     response.headers = {CONTENT_TYPE_HEADER: JSON_CONTENT_TYPE}
     json = {'result': 'a'}
-    with patch('spccore.baseclient.check_status_code_and_raise_error'), \
+    with patch('spccore.baseclient.check_status_code_and_raise_error') as mock_check_status_func, \
             patch.object(response, "json", return_value=json):
         assert _handle_response(response) == json
+        mock_check_status_func.assert_called_once_with(response)
 
 
 # _generate_signed_headers
@@ -122,6 +128,7 @@ def test__generate_request_url_invalid_endpoint():
 
 
 # get_base_client
+
 def test_get_base_client():
     repo_endpoint = "repo"
     auth_endpoint = "auth"
