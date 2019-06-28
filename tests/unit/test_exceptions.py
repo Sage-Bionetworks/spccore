@@ -42,7 +42,7 @@ def test_check_status_code_and_raise_error_5xx_with_error_code():
     response.status_code = 503
     response.reason = ""
     reason = 'some reason'
-    error_code = 10
+    error_code = "USER_CERTIFICATION_REQUIRED"
     json = {'reason': reason, 'errorCode': error_code}
     with patch.object(response, "json", return_value=json):
         try:
@@ -58,7 +58,7 @@ def test_check_status_code_and_raise_error_unknown_4xx():
     response.status_code = 418
     response.reason = ""
     reason = 'some reason'
-    error_code = 10
+    error_code = "USER_CERTIFICATION_REQUIRED"
     json = {'reason': reason, 'errorCode': error_code}
     with patch.object(response, "json", return_value=json):
         try:
@@ -74,7 +74,7 @@ def test_check_status_code_and_raise_error_unknown_5xx():
     response.status_code = 501
     response.reason = ""
     reason = 'some reason'
-    error_code = 10
+    error_code = "USER_CERTIFICATION_REQUIRED"
     json = {'reason': reason, 'errorCode': error_code}
     with patch.object(response, "json", return_value=json):
         try:
