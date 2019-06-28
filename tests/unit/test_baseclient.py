@@ -195,7 +195,7 @@ class TestSynapseBaseClient:
                 patch('spccore.baseclient._handle_response', return_value=stub_response) as mock_handle, \
                 patch('spccore.baseclient._generate_signed_headers', return_value=headers) as mock_sign_headers, \
                 patch.object(req_response, "json", return_value=json):
-            assert client.get(path, request_parameters= params) == stub_response
+            assert client.get(path, request_parameters=params) == stub_response
             mock_req_get.assert_called_once_with(SYNAPSE_DEFAULT_REPO_ENDPOINT+path, headers=headers, params=params)
             mock_handle.assert_called_once_with(req_response)
             mock_sign_headers.assert_called_once_with(SYNAPSE_DEFAULT_REPO_ENDPOINT+path,
@@ -212,7 +212,7 @@ class TestSynapseBaseClient:
                 patch('spccore.baseclient._handle_response', return_value=stub_response) as mock_handle, \
                 patch('spccore.baseclient._generate_signed_headers', return_value=headers) as mock_sign_headers, \
                 patch.object(req_response, "json", return_value=json):
-            assert client.get(path, request_parameters= params, endpoint=endpoint) == stub_response
+            assert client.get(path, request_parameters=params, endpoint=endpoint) == stub_response
             mock_req_get.assert_called_once_with(endpoint+path, headers=headers, params=params)
             mock_handle.assert_called_once_with(req_response)
             mock_sign_headers.assert_called_once_with(endpoint+path,
@@ -273,9 +273,9 @@ class TestSynapseBaseClient:
                 patch.object(req_response, "json", return_value=json):
             assert client.put(path, body, request_parameters=params) == body
             mock_req_put.assert_called_once_with(SYNAPSE_DEFAULT_REPO_ENDPOINT + path,
-                                                  data=json.dumps(body),
-                                                  headers=headers,
-                                                  params=params)
+                                                 data=json.dumps(body),
+                                                 headers=headers,
+                                                 params=params)
             mock_handle.assert_called_once_with(req_response)
             mock_sign_headers.assert_called_once_with(SYNAPSE_DEFAULT_REPO_ENDPOINT + path,
                                                       username=username,
@@ -293,9 +293,9 @@ class TestSynapseBaseClient:
                 patch.object(req_response, "json", return_value=json):
             assert client.put(path, body, request_parameters=params, endpoint=endpoint) == body
             mock_req_put.assert_called_once_with(endpoint + path,
-                                                  data=json.dumps(body),
-                                                  headers=headers,
-                                                  params=params)
+                                                 data=json.dumps(body),
+                                                 headers=headers,
+                                                 params=params)
             mock_handle.assert_called_once_with(req_response)
             mock_sign_headers.assert_called_once_with(endpoint + path,
                                                       username=username,
@@ -312,7 +312,7 @@ class TestSynapseBaseClient:
                 patch('spccore.baseclient._handle_response', return_value=stub_response) as mock_handle, \
                 patch('spccore.baseclient._generate_signed_headers', return_value=headers) as mock_sign_headers, \
                 patch.object(req_response, "json", return_value=json):
-            assert client.delete(path, request_parameters= params) == stub_response
+            assert client.delete(path, request_parameters=params) == stub_response
             mock_req_delete.assert_called_once_with(SYNAPSE_DEFAULT_REPO_ENDPOINT+path, headers=headers, params=params)
             mock_handle.assert_called_once_with(req_response)
             mock_sign_headers.assert_called_once_with(SYNAPSE_DEFAULT_REPO_ENDPOINT+path,
@@ -329,7 +329,7 @@ class TestSynapseBaseClient:
                 patch('spccore.baseclient._handle_response', return_value=stub_response) as mock_handle, \
                 patch('spccore.baseclient._generate_signed_headers', return_value=headers) as mock_sign_headers, \
                 patch.object(req_response, "json", return_value=json):
-            assert client.delete(path, request_parameters= params, endpoint=endpoint) == stub_response
+            assert client.delete(path, request_parameters=params, endpoint=endpoint) == stub_response
             mock_req_delete.assert_called_once_with(endpoint+path, headers=headers, params=params)
             mock_handle.assert_called_once_with(req_response)
             mock_sign_headers.assert_called_once_with(endpoint+path,
