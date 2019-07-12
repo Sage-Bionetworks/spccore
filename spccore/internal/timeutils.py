@@ -11,12 +11,11 @@ def from_epoch_time_to_iso(epoch_time: float) -> str:
     return None if epoch_time is None else from_datetime_to_iso(from_epoch_time_to_datetime(epoch_time))
 
 
-def from_datetime_to_iso(dt: datetime.datetime, sep: str = "T") -> str:
+def from_datetime_to_iso(dt: datetime.datetime) -> str:
     """
     Round microseconds to milliseconds and add back the "Z" (timezone) at the end
 
     :param dt: the datetime object that represents a time
-    :param sep:
     :return: a string representation of the datetime of object
     """
     fmt = "{time.year:04}-{time.month:02}-{time.day:02}" \
@@ -25,7 +24,7 @@ def from_datetime_to_iso(dt: datetime.datetime, sep: str = "T") -> str:
     if dt.microsecond >= 999500:
         dt -= datetime.timedelta(microseconds=dt.microsecond)
         dt += datetime.timedelta(seconds=1)
-    return fmt.format(time=dt, millisecond=int(round(dt.microsecond / 1000.0)), tz="Z", sep=sep)
+    return fmt.format(time=dt, millisecond=int(round(dt.microsecond / 1000.0)), tz="Z", sep="T")
 
 
 def from_epoch_time_to_datetime(time_ms: float) -> datetime.datetime:
