@@ -8,14 +8,14 @@ def test_private_acquire():
     user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
     user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
 
-    assert user1_lock._acquire()
+    assert user1_lock._acquire_lock()
     assert user1_lock._get_age() < 5
-    assert user2_lock._acquire() is False
+    assert user2_lock._acquire_lock() is False
 
     user1_lock.release()
 
-    assert user2_lock._acquire()
-    assert user1_lock._acquire() is False
+    assert user2_lock._acquire_lock()
+    assert user1_lock._acquire_lock() is False
 
     user2_lock.release()
 
@@ -26,11 +26,11 @@ def test_context_manager():
 
     with user1_lock:
         assert user1_lock._get_age() < 5
-        assert user2_lock._acquire() is False
+        assert user2_lock._acquire_lock() is False
 
     with user2_lock:
-        assert user2_lock._acquire()
-        assert user1_lock._acquire() is False
+        assert user2_lock._acquire_lock()
+        assert user1_lock._acquire_lock() is False
 
 
 def test_lock_timeout():
@@ -40,11 +40,11 @@ def test_lock_timeout():
     with user1_lock:
         assert user1_lock.held
         assert user1_lock._get_age() < 1.0
-        assert user2_lock._acquire(break_old_locks=True) is False
+        assert user2_lock._acquire_lock(break_old_locks=True) is False
         time.sleep(1.1)
         assert user1_lock._get_age() > 1.0
-        assert user2_lock._acquire(break_old_locks=False) is False
-        assert user2_lock._acquire(break_old_locks=True)
+        assert user2_lock._acquire_lock(break_old_locks=False) is False
+        assert user2_lock._acquire_lock(break_old_locks=True)
 
 
 # Try to hammer away at the locking mechanism from multiple threads

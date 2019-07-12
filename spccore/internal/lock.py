@@ -23,14 +23,14 @@ class Lock(object):
     def __init__(self,
                  name: str,
                  *,
-                 cwd: str = None,
+                 current_working_directory: str = None,
                  max_age: datetime.timedelta = LOCK_DEFAULT_MAX_AGE,
                  default_blocking_timeout: datetime.timedelta = DEFAULT_BLOCKING_TIMEOUT
                  ) -> None:
         self.name = name
         self.held = False
-        self.cwd = cwd if cwd else os.getcwd()
-        self.lock_dir_path = os.path.join(self.cwd, ".".join([name, Lock.SUFFIX]))
+        self.current_working_directory = current_working_directory if current_working_directory else os.getcwd()
+        self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, Lock.SUFFIX]))
         self.max_age = max_age
         self.default_blocking_timeout = default_blocking_timeout
 
@@ -47,17 +47,14 @@ class Lock(object):
             return True
         if timeout is None:
             timeout = self.default_blocking_timeout
-        lock_acquired = False
         try_lock_start_time = time.time()
         while time.time() - try_lock_start_time < timeout.total_seconds():
-            lock_acquired = self._acquire(break_old_locks=break_old_locks)
-            if lock_acquired:
-                break
+            if self._acquire_lock(break_old_locks=break_old_locks):
+                return True
             else:
                 doze(CACHE_UNLOCK_WAIT_TIME)
-        if not lock_acquired:
-            raise LockedException("Could not obtain a lock on the file cache within timeout: {timeout}."
-                                  " Please try again later.".format(**{'timeout': str(timeout)}))
+        raise LockedException("Could not obtain a lock on the file cache within timeout: {timeout}."
+                              " Please try again later.".format(**{'timeout': str(timeout)}))
 
     def release(self) -> None:
         """Release lock or do nothing if lock is not held"""
@@ -78,7 +75,7 @@ class Lock(object):
                 raise
             return 0
 
-    def _acquire(self, *, break_old_locks: bool = True) -> bool:
+    def _acquire_lock(self, *, break_old_locks: bool = True) -> bool:
         """
         Attempt to acquire lock.
 
