@@ -11,7 +11,7 @@ def from_epoch_time_to_iso(epoch_time: float) -> str:
     return None if epoch_time is None else from_datetime_to_iso(from_epoch_time_to_datetime(epoch_time))
 
 
-def from_datetime_to_iso(dt: datetime.datetime, sep: str= "T") -> str:
+def from_datetime_to_iso(dt: datetime.datetime, sep: str = "T") -> str:
     """
     Round microseconds to milliseconds and add back the "Z" (timezone) at the end
 
