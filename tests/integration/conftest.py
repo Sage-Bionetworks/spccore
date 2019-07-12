@@ -23,8 +23,8 @@ def anonymous_connection(test_endpoints) -> SynapseBaseClient:
 
     :return: the dev stack endpoint
     """
-    repo, auth, file = test_endpoints
-    return get_base_client(repo_endpoint=repo, auth_endpoint=auth, file_endpoint=file)
+    repo_endpoint, auth_endpoint, file_endpoint = test_endpoints
+    return get_base_client(repo_endpoint=repo_endpoint, auth_endpoint=auth_endpoint, file_endpoint=file_endpoint)
 
 
 @pytest.fixture
@@ -34,12 +34,12 @@ def test_user_connection(test_endpoints, test_credentials) -> SynapseBaseClient:
 
     :return: the test user's connection to Synapse
     """
-    repo, auth, file = test_endpoints
+    repo_endpoint, auth_endpoint, file_endpoint = test_endpoints
     username, password = test_credentials
-    api_key = _get_api_key(repo, auth, file, username, password)
-    return get_base_client(repo_endpoint=repo,
-                           auth_endpoint=auth,
-                           file_endpoint=file,
+    api_key = _get_api_key(repo_endpoint, auth_endpoint, file_endpoint, username, password)
+    return get_base_client(repo_endpoint=repo_endpoint,
+                           auth_endpoint=auth_endpoint,
+                           file_endpoint=file_endpoint,
                            username=username,
                            api_key=api_key)
 
