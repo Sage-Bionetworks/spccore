@@ -5,6 +5,26 @@ import datetime
 
 from spccore.internal.dozer import *
 
+"""
+An implementation of a lock system that use the os file system as a single semaphore.
+
+In this implementation, to acquire a lock, we attempt to create a file in the os file system. The os will ensure that
+only one file is created at a time. To release a lock, we attempt to remove the file.
+
+Example::
+    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
+    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
+    
+    with user1_lock:
+        // do something
+    
+    with user2_lock:
+        // do something else
+        
+Since both user1 and user2 are using the same lock "foo", while user1 is holding the lock, the user2 will wait.
+Therefore, {do something} and {do something else} will be executed in sequential.
+"""
+
 LOCK_DEFAULT_MAX_AGE = datetime.timedelta(seconds=10)
 DEFAULT_BLOCKING_TIMEOUT = datetime.timedelta(seconds=70)
 CACHE_UNLOCK_WAIT_TIME = 0.5
@@ -43,8 +63,6 @@ class Lock(object):
         :param break_old_locks: set to False to ignore old locks. Default True.
         :return: True on success; otherwise throws a LockedException.
         """
-        if self.held:
-            return True
         if timeout is None:
             timeout = self.default_blocking_timeout
         try_lock_start_time = time.time()

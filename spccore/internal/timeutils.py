@@ -2,11 +2,21 @@ import datetime
 import platform
 
 """
-Epoch time is in milisecond precision.
-In Python time.time() and datetime.datetime.utcfromtimestamp() operates on float with milisecond precision.
-For example 123.456 represents 123456 miliseconds.
+Epoch time is in milisecond precision. In Python time.time() and datetime.datetime.utcfromtimestamp() operates on float 
+with milisecond precision. For example 123.456 represents 123456 miliseconds.
+
 The methods above takes and returns float in milisecond precision even though the unit before the decimal point is in 
 second.
+
+Example::
+
+    from_epoch_time_to_iso(1561939380.9995)                              #'2019-07-01T00:03:01.000Z'
+    
+    from_datetime_to_iso(datetime.datetime(2019, 7, 1, 0, 3, 0, 999500)) #'2019-07-01T00:03:01.000Z'
+    
+    from_epoch_time_to_datetime(1561939380.9995)                         #datetime.datetime(2019, 7, 1, 0, 3, 0, 999500)
+    
+    from_datetime_to_epoch_time(datetime.datetime(2019, 7, 1, 0, 3, 0, 999500)) #1561939380.9995
 """
 
 UNIX_EPOCH = datetime.datetime(1970, 1, 1, 0, 0)

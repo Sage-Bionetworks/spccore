@@ -3,7 +3,10 @@ Created on Sep 21, 2017
 
 @author: bhoff
 
-sleep while checking registered _listeners
+Sleep while checking registered _listeners
+
+This module was added as a workaround for synapser keyboard interruption problem.
+Please see SYNR-1125 for more information.
 """
 import time
 import typing
