@@ -25,7 +25,7 @@ def clear_listeners() -> None:
     del _listeners[:]
 
 
-def doze(wait_secs: float, listener_check_interval_secs: float=0.1) -> None:
+def doze(wait_secs: float, listener_check_interval_secs: float = 0.1) -> None:
     """Wait for a given wait_secs before executing the callable listeners"""
 
     exec_time = time.time() + wait_secs
