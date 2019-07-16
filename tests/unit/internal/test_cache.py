@@ -4,6 +4,7 @@ from spccore.internal.cache import *
 from spccore.internal.cache import _cache_dirs, _get_modified_time, _normalize_path, _is_modified, _write_cache_map_to,\
 _get_cache_map_at, _get_all_non_modified_paths
 
+
 # test _cache_dirs
 def test_private_cache_dirs_empty():
     with patch.object(os, "listdir", return_value=list()) as mock_listdir:
@@ -14,7 +15,7 @@ def test_private_cache_dirs_empty():
 
 def test_private_cache_dirs_with_invalid_dirs():
     with patch.object(os, "listdir", side_effect=[["123", "fake_name", "another1"],
-                                                   ["987123", "other", "567123"]]) as mock_listdir,\
+                                                  ["987123", "other", "567123"]]) as mock_listdir,\
          patch.object(os.path, "isdir", return_value=True) as mock_isdir:
         dirs = _cache_dirs(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
         assert list(dirs) == [os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123"),
@@ -28,8 +29,22 @@ def test_private_cache_dirs_with_invalid_dirs():
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "fake_name")),
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "another1"))]
 
-# test _get_modified_time
 
+# test _get_modified_time
+def test_private_get_modified_time_with_non_exist_path():
+    with patch.object(os.path, "exists", return_value=False) as mock_exists, \
+            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
+        assert _get_modified_time("some_path") is None
+        mock_exists.assert_called_once_with("some_path")
+        mock_getmtime.assert_not_called()
+
+
+def test_private_get_modified_time_with_exist_path():
+    with patch.object(os.path, "exists", return_value=True) as mock_exists, \
+            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
+        assert _get_modified_time("some_path") == 1
+        mock_exists.assert_called_once_with("some_path")
+        mock_getmtime.assert_called_once_with("some_path")
 
 # test _normalize_path
 
