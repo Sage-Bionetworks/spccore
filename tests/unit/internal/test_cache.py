@@ -46,9 +46,34 @@ def test_private_get_modified_time_with_exist_path():
         mock_exists.assert_called_once_with("some_path")
         mock_getmtime.assert_called_once_with("some_path")
 
+
 # test _normalize_path
+def test_private_normalize_path_with_none():
+    with patch.object(os.path, "abspath") as mock_abspath, \
+            patch.object(os.path, "normcase") as mock_normcase:
+        assert _normalize_path(None) is None
+        mock_abspath.assert_not_called()
+        mock_normcase.assert_not_called()
+
+
+def test_private_normalize_path_with_unix_path():
+    with patch.object(os.path, "abspath", return_value="/home/ubuntu/") as mock_abspath, \
+            patch.object(os.path, "normcase", return_value="/home/ubuntu/") as mock_normcase:
+        assert _normalize_path("/home/ubuntu/") == "/home/ubuntu/"
+        mock_abspath.assert_called_once_with("/home/ubuntu/")
+        mock_normcase.assert_called_once_with("/home/ubuntu/")
+
+
+def test_private_normalize_path_with_windows_path():
+    with patch.object(os.path, "abspath", return_value="C:\Administrator\Documents") as mock_abspath, \
+            patch.object(os.path, "normcase", return_value="C:\Administrator\Documents") as mock_normcase:
+        assert _normalize_path("C:\Administrator\Documents") == "C:/Administrator/Documents"
+        mock_abspath.assert_called_once_with("C:\Administrator\Documents")
+        mock_normcase.assert_called_once_with("C:\Administrator\Documents")
+
 
 # test _is_modified
+
 
 # test _write_cache_map_to
 
