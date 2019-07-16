@@ -107,7 +107,7 @@ class Cache:
                              file_handle_id: int,
                              file_name: str,
                              *,
-                             file_path: str=None
+                             file_path: str = None
                              ) -> typing.Union[str, None]:
         """
         Retrieve a file for the given file handle id from the cache
@@ -314,8 +314,8 @@ def _cache_dirs(cache_root_dir: str) -> list:
     """
     for hashed_dir in os.listdir(cache_root_dir):
         path_to_hashed_dir = os.path.join(cache_root_dir, hashed_dir)
-        if os.path.isdir(path_to_hashed_dir) and re.match('\d+', hashed_dir):
+        if os.path.isdir(path_to_hashed_dir) and re.match(r'\d+', hashed_dir):
             for file_handle_id_dir in os.listdir(path_to_hashed_dir):
                 path_to_file_handle_id_dir = os.path.join(path_to_hashed_dir, file_handle_id_dir)
-                if os.path.isdir(path_to_file_handle_id_dir) and re.match('\d+', file_handle_id_dir):
+                if os.path.isdir(path_to_file_handle_id_dir) and re.match(r'\d+', file_handle_id_dir):
                     yield path_to_file_handle_id_dir
