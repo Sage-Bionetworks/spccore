@@ -14,13 +14,13 @@ only one file is created at a time. To release a lock, we attempt to remove the 
 Example::
     user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
     user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
-    
+
     with user1_lock:
         // do something
-    
+
     with user2_lock:
         // do something else
-        
+
 Since both user1 and user2 are using the same lock "foo", while user1 is holding the lock, the user2 will wait.
 Therefore, {do something} and {do something else} will be executed in sequential.
 """
