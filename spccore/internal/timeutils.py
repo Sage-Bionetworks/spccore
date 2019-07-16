@@ -2,10 +2,10 @@ import datetime
 import platform
 
 """
-Epoch time is in millisecond precision. In Python time.time() and datetime.datetime.utcfromtimestamp() operates on float 
+Epoch time is in millisecond precision. In Python time.time() and datetime.datetime.utcfromtimestamp() operates on float
 with millisecond precision. For example 123.456 represents 123456 milliseconds.
 
-The methods above takes and returns float in millisecond precision even though the unit before the decimal point is in 
+The methods above takes and returns float in millisecond precision even though the unit before the decimal point is in
 second.
 
 Example::
