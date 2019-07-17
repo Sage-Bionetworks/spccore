@@ -289,7 +289,7 @@ def _is_modified(cache_dir: str, file_path: str) -> bool:
     """
     cache_map = _get_cache_map_at(cache_dir)
     cache_time = cache_map.get(_normalize_path(file_path))
-    return cache_time < os.path.getmtime(file_path)
+    return cache_time is None or cache_time < os.path.getmtime(file_path)
 
 
 # To be compatible with R

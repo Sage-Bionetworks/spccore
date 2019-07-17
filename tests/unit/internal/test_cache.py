@@ -1,4 +1,4 @@
-from unittest.mock import patch, call
+from unittest.mock import patch, call, Mock, mock_open
 
 from spccore.internal.cache import *
 from spccore.internal.cache import _cache_dirs, _get_modified_time, _normalize_path, _is_modified, _write_cache_map_to,\
@@ -65,17 +65,56 @@ def test_private_normalize_path_with_unix_path():
 
 
 def test_private_normalize_path_with_windows_path():
-    with patch.object(os.path, "abspath", return_value="C:\Administrator\Documents") as mock_abspath, \
-            patch.object(os.path, "normcase", return_value="C:\Administrator\Documents") as mock_normcase:
-        assert _normalize_path("C:\Administrator\Documents") == "C:/Administrator/Documents"
-        mock_abspath.assert_called_once_with("C:\Administrator\Documents")
-        mock_normcase.assert_called_once_with("C:\Administrator\Documents")
+    with patch.object(os.path, "abspath", return_value="C:\\Administrator\\Documents") as mock_abspath, \
+            patch.object(os.path, "normcase", return_value="C:\\Administrator\\Documents") as mock_normcase:
+        assert _normalize_path("C:\\Administrator\\Documents") == "C:/Administrator/Documents"
+        mock_abspath.assert_called_once_with("C:\\Administrator\\Documents")
+        mock_normcase.assert_called_once_with("C:\\Administrator\\Documents")
 
 
 # test _is_modified
+def test_private_is_modified_empty_cache_map():
+    path = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123", "test.txt")
+    cache_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123")
+    with patch("spccore.internal.cache._get_cache_map_at", return_value={}) as mock_get_cache_map, \
+            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
+        assert _is_modified(cache_dir, path)
+        mock_get_cache_map.assert_called_once_with(cache_dir)
+        mock_getmtime.assert_not_called()
 
 
 # test _write_cache_map_to
+def test_private_write_cache_map_to_cache_dir_not_exist():
+    to_write = {}
+    cache_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123")
+    cache_map_file = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
+    with patch.object(os.path, "exists", return_value=False) as mock_exists, \
+            patch.object(os, "makedirs") as mock_makedirs, \
+            patch("builtins.open", mock_open()) as mock_file, \
+            patch.object(json, "dump") as mock_json_dump:
+        _write_cache_map_to(to_write, cache_dir)
+        mock_exists.assert_called_once_with(cache_dir)
+        mock_makedirs.assert_called_once_with(cache_dir)
+        mock_file.assert_called_once_with(cache_map_file, 'w')
+        mock_json_dump.assert_called_once_with(to_write, mock_file())
+        mock_file().write.assert_called_once_with('\n')
+
+
+def test_private_write_cache_map_to_cache_dir_exist():
+    to_write = {}
+    cache_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123")
+    cache_map_file = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
+    with patch.object(os.path, "exists", return_value=True) as mock_exists, \
+            patch.object(os, "makedirs") as mock_makedirs, \
+            patch("builtins.open", mock_open()) as mock_file, \
+            patch.object(json, "dump") as mock_json_dump:
+        _write_cache_map_to(to_write, cache_dir)
+        mock_exists.assert_called_once_with(cache_dir)
+        mock_makedirs.assert_not_called()
+        mock_file.assert_called_once_with(cache_map_file, 'w')
+        mock_json_dump.assert_called_once_with(to_write, mock_file())
+        mock_file().write.assert_called_once_with('\n')
+
 
 # test _get_cache_map_at
 
