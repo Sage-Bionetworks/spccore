@@ -159,10 +159,10 @@ class Cache:
 
         cache_dir = self._get_cache_dir(file_handle_id)
         with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
-            cache_map = _get_cache_map_at(cache_dir)
+            cache_map = _get_cache_map(cache_dir)
             file_path = _normalize_path(file_path)
-            cache_map[file_path] = from_epoch_time_to_iso(math.floor(_get_modified_time(file_path)))
-            _write_cache_map_to(cache_map, cache_dir)
+            cache_map[file_path] = _get_modified_time_in_iso(file_path)
+            _write_cache_map(cache_map, cache_dir)
 
         return cache_map
 
@@ -182,7 +182,7 @@ class Cache:
         cache_dir = self._get_cache_dir(file_handle_id)
 
         with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
-            cache_map = _get_cache_map_at(cache_dir)
+            cache_map = _get_cache_map(cache_dir)
 
             if file_path is None:
                 for path in cache_map:
@@ -198,7 +198,7 @@ class Cache:
                     del cache_map[file_path]
                     removed.append(file_path)
 
-            _write_cache_map_to(cache_map, cache_dir)
+            _write_cache_map(cache_map, cache_dir)
 
         return removed
 
@@ -236,23 +236,23 @@ def _get_all_non_modified_paths(cache_dir: str) -> list:
     :param cache_dir: the cache directory to look for
     :return: all non-modified paths
     """
-    cache_map = _get_cache_map_at(cache_dir)
+    cache_map = _get_cache_map(cache_dir)
     non_modified_paths = list()
     for path in cache_map:
         normalized_path = _normalize_path(path)
-        if _get_modified_time(normalized_path) == cache_map.get(normalized_path):
+        if _get_modified_time_in_iso(normalized_path) == cache_map.get(normalized_path):
             non_modified_paths.append(normalized_path)
     return non_modified_paths
 
 
-def _get_cache_map_at(cache_folder_path: str) -> dict:
+def _get_cache_map(cache_dir: str) -> dict:
     """
-    Perform a cache map read and return the cache map for a given cache folder
+    Perform a cache map read and return the cache map for a given cache directory
 
-    :param cache_folder_path: the path to the cache folder
+    :param cache_dir: the path to the cache directory
     :return: a dictionary with the cache map of all files in the cache folder
     """
-    cache_map_file_path = os.path.join(cache_folder_path, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
+    cache_map_file_path = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
 
     if not os.path.exists(cache_map_file_path):
         return {}
@@ -262,7 +262,7 @@ def _get_cache_map_at(cache_folder_path: str) -> dict:
     return cache_map
 
 
-def _write_cache_map_to(cache_map: dict, cache_dir: str) -> None:
+def _write_cache_map(cache_map: dict, cache_dir: str) -> None:
     """
     Perform a cache map write
 
@@ -287,9 +287,9 @@ def _is_modified(cache_dir: str, file_path: str) -> bool:
     :param file_path: the file to check
     :return: true if the file's modified time is later than the cache time; false otherwise
     """
-    cache_map = _get_cache_map_at(cache_dir)
+    cache_map = _get_cache_map(cache_dir)
     cache_time = cache_map.get(_normalize_path(file_path))
-    return cache_time is None or cache_time < os.path.getmtime(file_path)
+    return cache_time is None or cache_time < _get_modified_time_in_iso(file_path)
 
 
 # To be compatible with R
@@ -298,6 +298,13 @@ def _normalize_path(path: str) -> typing.Union[str, None]:
     if path is None:
         return None
     return re.sub(r'\\', '/', os.path.normcase(os.path.abspath(path)))
+
+
+def _get_modified_time_in_iso(path: str) -> typing.Union[str, None]:
+    """Return the last modified time of a file / folder identified by path in iso format"""
+    if os.path.exists(path):
+        return from_epoch_time_to_iso(math.floor(os.path.getmtime(path)))
+    return None
 
 
 def _get_modified_time(path: str) -> typing.Union[int, None]:
