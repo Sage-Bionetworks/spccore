@@ -1,8 +1,8 @@
-from unittest.mock import patch, call, Mock, mock_open
+from unittest.mock import patch, call, mock_open
 
 from spccore.internal.cache import *
-from spccore.internal.cache import _cache_dirs, _get_modified_time, _normalize_path, _is_modified, _write_cache_map,\
-_get_cache_map, _get_all_non_modified_paths, _get_modified_time_in_iso
+from spccore.internal.cache import _cache_dirs, _get_modified_time, _normalize_path, _is_modified, _write_cache_map, \
+    _get_cache_map, _get_all_non_modified_paths, _get_modified_time_in_iso
 
 
 # test _cache_dirs
@@ -15,8 +15,8 @@ def test_private_cache_dirs_empty():
 
 def test_private_cache_dirs_with_invalid_dirs():
     with patch.object(os, "listdir", side_effect=[["123", "fake_name", "another1"],
-                                                  ["987123", "other", "567123"]]) as mock_listdir,\
-         patch.object(os.path, "isdir", return_value=True) as mock_isdir:
+                                                  ["987123", "other", "567123"]]) as mock_listdir, \
+            patch.object(os.path, "isdir", return_value=True) as mock_isdir:
         dirs = _cache_dirs(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
         assert list(dirs) == [os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123"),
                               os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")]
@@ -50,7 +50,7 @@ def test_private_get_modified_time_with_exist_path():
 
 
 # test _get_modified_time_in_iso
-def test_private_get_modified_time_with_non_exist_path():
+def test_private_get_modified_time_in_iso_with_non_exist_path():
     path = "some_path"
     with patch.object(os.path, "exists", return_value=False) as mock_exists, \
             patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
@@ -59,7 +59,7 @@ def test_private_get_modified_time_with_non_exist_path():
         mock_getmtime.assert_not_called()
 
 
-def test_private_get_modified_time_with_exist_path():
+def test_private_get_modified_time_in_iso_with_exist_path():
     path = "some_path"
     with patch.object(os.path, "exists", return_value=True) as mock_exists, \
             patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
@@ -174,7 +174,7 @@ def test_private_get_all_non_modified_paths():
     }
     mtimes = ['2019-07-01T00:00:00.001Z', '2019-07-01T00:03:01.000Z']
     with patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-         patch("spccore.internal.cache._get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
+            patch("spccore.internal.cache._get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
         assert _get_all_non_modified_paths(cache_dir) == ["/some/other/path/to/file2.txt"]
         mock_get_cache_map.assert_called_once_with(cache_dir)
         assert mock_get_mtime_in_iso.call_args_list == [call("/some/path/to/file.txt"),
