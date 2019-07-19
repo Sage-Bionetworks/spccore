@@ -1,4 +1,4 @@
-from unittest.mock import patch, call, mock_open
+from unittest.mock import patch, call, mock_open, Mock
 
 from spccore.internal.cache import *
 from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, _get_cache_map,\
@@ -49,13 +49,15 @@ def test_private_write_cache_map_cache_dir_not_exist():
     with patch.object(os.path, "exists", return_value=False) as mock_exists, \
             patch.object(os, "makedirs") as mock_makedirs, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "dump") as mock_json_dump:
+            patch.object(json, "dump") as mock_json_dump, \
+            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
         _write_cache_map(to_write, cache_dir)
         mock_exists.assert_called_once_with(cache_dir)
         mock_makedirs.assert_called_once_with(cache_dir)
         mock_file.assert_called_once_with(cache_map_file, 'w')
         mock_json_dump.assert_called_once_with(to_write, mock_file())
         mock_file().write.assert_called_once_with('\n')
+        mock_lock.assert_called_once()
 
 
 def test_private_write_cache_map_cache_dir_exist():
@@ -65,13 +67,15 @@ def test_private_write_cache_map_cache_dir_exist():
     with patch.object(os.path, "exists", return_value=True) as mock_exists, \
             patch.object(os, "makedirs") as mock_makedirs, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "dump") as mock_json_dump:
+            patch.object(json, "dump") as mock_json_dump, \
+            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
         _write_cache_map(to_write, cache_dir)
         mock_exists.assert_called_once_with(cache_dir)
         mock_makedirs.assert_not_called()
         mock_file.assert_called_once_with(cache_map_file, 'w')
         mock_json_dump.assert_called_once_with(to_write, mock_file())
         mock_file().write.assert_called_once_with('\n')
+        mock_lock.assert_called_once()
 
 
 # test _get_cache_map
@@ -80,11 +84,13 @@ def test_private_get_cache_map_not_exist():
     cache_file_path = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
     with patch.object(os.path, "exists", return_value=False) as mock_exists, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "load") as mock_json_load:
+            patch.object(json, "load") as mock_json_load, \
+            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
         assert _get_cache_map(cache_dir) == {}
         mock_exists.assert_called_once_with(cache_file_path)
         mock_file.assert_not_called()
         mock_json_load.assert_not_called()
+        mock_lock.assert_not_called()
 
 
 def test_private_get_cache_map_exist():
@@ -92,11 +98,13 @@ def test_private_get_cache_map_exist():
     cache_file_path = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
     with patch.object(os.path, "exists", return_value=True) as mock_exists, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "load", return_value={}) as mock_json_load:
+            patch.object(json, "load", return_value={}) as mock_json_load, \
+            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
         assert _get_cache_map(cache_dir) == {}
         mock_exists.assert_called_once_with(cache_file_path)
         mock_file.assert_called_once_with(cache_file_path, 'r')
         mock_json_load.assert_called_once_with(mock_file())
+        mock_lock.assert_called_once()
 
 
 # test _get_all_non_modified_paths
@@ -108,7 +116,7 @@ def test_private_get_all_non_modified_paths():
     }
     mtimes = ['2019-07-01T00:00:00.001Z', '2019-07-01T00:03:01.000Z']
     with patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch("spccore.internal.cache._get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
+            patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
         assert _get_all_non_modified_paths(cache_dir) == ["/some/other/path/to/file2.txt"]
         mock_get_cache_map.assert_called_once_with(cache_dir)
         assert mock_get_mtime_in_iso.call_args_list == [call("/some/path/to/file.txt"),
