@@ -1,7 +1,7 @@
-import os
 from unittest.mock import patch
 
 from spccore.internal.pathutils import *
+
 
 # test get_modified_time
 def test_get_modified_time_with_non_exist_path():
