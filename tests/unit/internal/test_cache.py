@@ -6,17 +6,29 @@ from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, 
 
 
 # test _cache_dirs
+def test_private_cache_dirs_not_exist():
+    with patch.object(os, "listdir", return_value=list()) as mock_listdir, \
+            patch.object(os.path, "exists", return_value=False) as mock_exists:
+        dirs = _cache_dirs(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
+        assert len(list(dirs)) == 0
+        mock_listdir.assert_not_called()
+        mock_exists.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
+
+
 def test_private_cache_dirs_empty():
-    with patch.object(os, "listdir", return_value=list()) as mock_listdir:
+    with patch.object(os, "listdir", return_value=list()) as mock_listdir, \
+            patch.object(os.path, "exists", return_value=True) as mock_exists:
         dirs = _cache_dirs(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
         assert len(list(dirs)) == 0
         mock_listdir.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
+        mock_exists.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
 
 
 def test_private_cache_dirs_with_invalid_dirs():
     with patch.object(os, "listdir", side_effect=[["123", "fake_name", "another1"],
                                                   ["987123", "other", "567123"]]) as mock_listdir, \
-            patch.object(os.path, "isdir", return_value=True) as mock_isdir:
+            patch.object(os.path, "isdir", return_value=True) as mock_isdir, \
+            patch.object(os.path, "exists", return_value=True) as mock_exists:
         dirs = _cache_dirs(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
         assert list(dirs) == [os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123"),
                               os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")]
@@ -28,6 +40,7 @@ def test_private_cache_dirs_with_invalid_dirs():
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")),
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "fake_name")),
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "another1"))]
+        mock_exists.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
 
 
 # test _is_modified
