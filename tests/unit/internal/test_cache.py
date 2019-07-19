@@ -1,8 +1,8 @@
 from unittest.mock import patch, call, mock_open
 
 from spccore.internal.cache import *
-from spccore.internal.cache import _cache_dirs, _get_modified_time, _normalize_path, _is_modified, _write_cache_map, \
-    _get_cache_map, _get_all_non_modified_paths, _get_modified_time_in_iso
+from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, _get_cache_map,\
+    _get_all_non_modified_paths
 
 
 # test _cache_dirs
@@ -28,72 +28,6 @@ def test_private_cache_dirs_with_invalid_dirs():
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")),
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "fake_name")),
                                              call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "another1"))]
-
-
-# test _get_modified_time
-def test_private_get_modified_time_with_non_exist_path():
-    path = "some_path"
-    with patch.object(os.path, "exists", return_value=False) as mock_exists, \
-            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
-        assert _get_modified_time(path) is None
-        mock_exists.assert_called_once_with(path)
-        mock_getmtime.assert_not_called()
-
-
-def test_private_get_modified_time_with_exist_path():
-    path = "some_path"
-    with patch.object(os.path, "exists", return_value=True) as mock_exists, \
-            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
-        assert _get_modified_time(path) == 1
-        mock_exists.assert_called_once_with(path)
-        mock_getmtime.assert_called_once_with(path)
-
-
-# test _get_modified_time_in_iso
-def test_private_get_modified_time_in_iso_with_non_exist_path():
-    path = "some_path"
-    with patch.object(os.path, "exists", return_value=False) as mock_exists, \
-            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
-        assert _get_modified_time_in_iso(path) is None
-        mock_exists.assert_called_once_with(path)
-        mock_getmtime.assert_not_called()
-
-
-def test_private_get_modified_time_in_iso_with_exist_path():
-    path = "some_path"
-    with patch.object(os.path, "exists", return_value=True) as mock_exists, \
-            patch.object(os.path, "getmtime", return_value=1) as mock_getmtime:
-        assert _get_modified_time_in_iso(path) == '1970-01-01T00:00:01.000Z'
-        mock_exists.assert_called_once_with(path)
-        mock_getmtime.assert_called_once_with(path)
-
-
-# test _normalize_path
-def test_private_normalize_path_with_none():
-    with patch.object(os.path, "abspath") as mock_abspath, \
-            patch.object(os.path, "normcase") as mock_normcase:
-        assert _normalize_path(None) is None
-        mock_abspath.assert_not_called()
-        mock_normcase.assert_not_called()
-
-
-def test_private_normalize_path_with_unix_path():
-    linux_path = "/home/ubuntu/"
-    with patch.object(os.path, "abspath", return_value=linux_path) as mock_abspath, \
-            patch.object(os.path, "normcase", return_value=linux_path) as mock_normcase:
-        assert _normalize_path(linux_path) == linux_path
-        mock_abspath.assert_called_once_with(linux_path)
-        mock_normcase.assert_called_once_with(linux_path)
-
-
-def test_private_normalize_path_with_windows_path():
-    windows_path = "C:\\Administrator\\Documents"
-    linux_path = "C:/Administrator/Documents"
-    with patch.object(os.path, "abspath", return_value=windows_path) as mock_abspath, \
-            patch.object(os.path, "normcase", return_value=windows_path) as mock_normcase:
-        assert _normalize_path(windows_path) == linux_path
-        mock_abspath.assert_called_once_with(windows_path)
-        mock_normcase.assert_called_once_with(windows_path)
 
 
 # test _is_modified
@@ -189,9 +123,7 @@ class TestCache:
 
     # test get_default_file_path
 
-    # test get_cached_file_path
-
-    # test get_all_cached_file_path
+    # test get_all_unmodified_cached_file_paths
 
     # test register
 
