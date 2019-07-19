@@ -1,5 +1,4 @@
 import configparser
-import os
 import pytest
 from spccore.baseclient import *
 
