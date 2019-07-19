@@ -70,7 +70,7 @@ def test_private_write_cache_map_cache_dir_not_exist():
         mock_file.assert_called_once_with(cache_map_file, 'w')
         mock_json_dump.assert_called_once_with(to_write, mock_file())
         mock_file().write.assert_called_once_with('\n')
-        mock_lock.assert_called_once()
+        mock_lock.assert_called_once_with()
 
 
 def test_private_write_cache_map_cache_dir_exist():
@@ -88,7 +88,7 @@ def test_private_write_cache_map_cache_dir_exist():
         mock_file.assert_called_once_with(cache_map_file, 'w')
         mock_json_dump.assert_called_once_with(to_write, mock_file())
         mock_file().write.assert_called_once_with('\n')
-        mock_lock.assert_called_once()
+        mock_lock.assert_called_once_with()
 
 
 # test _get_cache_map
@@ -117,7 +117,7 @@ def test_private_get_cache_map_exist():
         mock_exists.assert_called_once_with(cache_file_path)
         mock_file.assert_called_once_with(cache_file_path, 'r')
         mock_json_load.assert_called_once_with(mock_file())
-        mock_lock.assert_called_once()
+        mock_lock.assert_called_once_with()
 
 
 # test _get_all_non_modified_paths
