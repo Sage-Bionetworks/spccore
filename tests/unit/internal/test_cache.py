@@ -1,9 +1,14 @@
 from unittest.mock import patch, call, mock_open, Mock
 
 from spccore.internal.cache import *
-from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, _get_cache_map,\
+from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, _get_cache_map, _get_file_handle_id, \
     _get_all_non_modified_paths
 
+
+# test _get_file_handle_id
+def test_private_get_file_handle_id():
+    cache_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123")
+    assert _get_file_handle_id(cache_dir) == 987123
 
 # test _cache_dirs
 def test_private_cache_dirs_not_exist():

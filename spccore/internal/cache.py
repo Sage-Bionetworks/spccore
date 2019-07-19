@@ -139,6 +139,7 @@ class Cache:
 
 
 # Helper methods
+# These methods are not designed to be used outside of this module.
 
 
 def _get_all_non_modified_paths(cache_dir: str) -> list:
