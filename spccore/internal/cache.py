@@ -118,10 +118,13 @@ class Cache:
         Purge the cache. Use with caution. Delete files whose cache maps were last updated prior to the given date.
         Deletes .cacheMap files and files that the cache map point to.
 
+        This function is recommended when working with PHI or sensitive data.
+
         :param before_date: the cutoff time to look up
         :param dry_run: Set to True to list all cache dir that would be removed. Default False.
         :return: the number of file handle id directories that has been removed
         """
+        validate_type(datetime.datetime, before_date, "before_date")
         before_date = from_datetime_to_epoch_time(before_date)
         count = 0
         for cache_dir in _cache_dirs(self.cache_root_dir):

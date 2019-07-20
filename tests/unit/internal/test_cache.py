@@ -257,5 +257,108 @@ class TestCache:
             mock_write_cache_map.assert_called_once_with(expected_cache_map, cache_dir)
 
     # test remove
+    def test_remove_with_invalid_input(self, cache):
+        with pytest.raises(TypeError):
+            cache.remove("123")
+
+    def test_remove_all_without_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
+        to_be_removed = {file_path: '2019-07-01T00:03:01.000Z'}
+        with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch.object(os.path, "exists", return_value=True) as mock_exists, \
+                patch.object(os, "remove") as mock_remove, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch("spccore.internal.cache._get_cache_map", return_value=to_be_removed) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+            assert [file_path] == cache.remove(file_handle_id)
+            mock_get_cache_dir.assert_called_once_with(file_handle_id)
+            mock_exists.assert_not_called()
+            mock_remove.assert_not_called()
+            mock_lock.assert_called_once_with()
+            mock_get_cache_map.assert_called_once_with(cache_dir)
+            mock_write_cache_map.assert_called_once_with({}, cache_dir)
+
+    def test_remove_all_with_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
+        to_be_removed = {file_path: '2019-07-01T00:03:01.000Z'}
+        with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch.object(os.path, "exists", return_value=True) as mock_exists, \
+                patch.object(os, "remove") as mock_remove, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch("spccore.internal.cache._get_cache_map", return_value=to_be_removed) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+            assert [file_path] == cache.remove(file_handle_id, delete_file=True)
+            mock_get_cache_dir.assert_called_once_with(file_handle_id)
+            mock_exists.assert_called_once_with(file_path)
+            mock_remove.assert_called_once_with(file_path)
+            mock_lock.assert_called_once_with()
+            mock_get_cache_map.assert_called_once_with(cache_dir)
+            mock_write_cache_map.assert_called_once_with({}, cache_dir)
+
+    def test_remove_single_path_with_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
+        map_content = {file_path: '2019-07-01T00:03:01.000Z'}
+        with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch.object(os.path, "exists", return_value=True) as mock_exists, \
+                patch.object(os, "remove") as mock_remove, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch("spccore.internal.cache._get_cache_map", return_value=map_content) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+            assert [file_path] == cache.remove(file_handle_id, file_path=file_path, delete_file=True)
+            mock_get_cache_dir.assert_called_once_with(file_handle_id)
+            mock_exists.assert_called_once_with(file_path)
+            mock_remove.assert_called_once_with(file_path)
+            mock_lock.assert_called_once_with()
+            mock_get_cache_map.assert_called_once_with(cache_dir)
+            mock_write_cache_map.assert_called_once_with({}, cache_dir)
+
+    def test_remove_single_path_not_in_cache_with_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
+        with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch.object(os.path, "exists", return_value=True) as mock_exists, \
+                patch.object(os, "remove") as mock_remove, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+            assert [file_path] == cache.remove(file_handle_id, file_path=file_path, delete_file=True)
+            mock_get_cache_dir.assert_called_once_with(file_handle_id)
+            mock_exists.assert_called_once_with(file_path)
+            mock_remove.assert_called_once_with(file_path)
+            mock_lock.assert_called_once_with()
+            mock_get_cache_map.assert_called_once_with(cache_dir)
+            mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
     # test purge
+    def test_purge_with_invalid_date(self, cache):
+        with pytest.raises(TypeError):
+            cache.purge(0)
+
+    def test_purge(self, cache, cache_dir, file_handle_id):
+        other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
+        before_date = datetime.datetime(2019, 7, 2)
+        mtime = from_datetime_to_epoch_time(datetime.datetime(2019, 7, 1))
+        with patch("spccore.internal.cache._cache_dirs",
+                   return_value=[cache_dir, other_dir]) as mock_private_cache_dirs, \
+                patch("spccore.internal.cache.get_modified_time",
+                      side_effect=(mtime, from_datetime_to_epoch_time(before_date))) as mock_get_mtime, \
+                patch("spccore.internal.cache.Cache.remove") as mock_remove, \
+                patch.object(shutil, "rmtree") as mock_rmtree:
+            assert 1 == cache.purge(before_date)
+            mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
+            assert mock_get_mtime.call_args_list == [call(os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)),
+                                                     call(os.path.join(other_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME))]
+            mock_remove.assert_called_once_with(file_handle_id)
+            mock_rmtree.assert_called_once_with(cache_dir)
+
+    def test_purge_dry_run(self, cache, cache_dir, file_handle_id):
+        other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
+        before_date = datetime.datetime(2019, 7, 2)
+        mtime = from_datetime_to_epoch_time(datetime.datetime(2019, 7, 1))
+        with patch("spccore.internal.cache._cache_dirs",
+                   return_value=[cache_dir, other_dir]) as mock_private_cache_dirs, \
+                patch("spccore.internal.cache.get_modified_time",
+                      side_effect=(mtime, from_datetime_to_epoch_time(before_date))) as mock_get_mtime, \
+                patch("spccore.internal.cache.Cache.remove") as mock_remove, \
+                patch.object(shutil, "rmtree") as mock_rmtree:
+            assert 1 == cache.purge(before_date, dry_run=True)
+            mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
+            assert mock_get_mtime.call_args_list == [call(os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)),
+                                                     call(os.path.join(other_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME))]
+            mock_remove.assert_not_called()
+            mock_rmtree.assert_not_called()
