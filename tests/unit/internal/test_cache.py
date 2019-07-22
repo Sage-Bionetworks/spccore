@@ -131,6 +131,7 @@ def test_private_get_all_non_modified_paths(cache_dir):
     mtimes = ['2019-07-01T00:00:00.001Z', '2019-07-01T00:03:01.000Z']
     with patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
+        assert '2019-07-01T00:03:01.000Z' == '2019-07-01T00:03:01.000Z'
         assert _get_all_non_modified_paths(cache_dir) == ["/some/other/path/to/file2.txt"]
         mock_get_cache_map.assert_called_once_with(cache_dir)
         assert mock_get_mtime_in_iso.call_args_list == [call("/some/path/to/file.txt"),
