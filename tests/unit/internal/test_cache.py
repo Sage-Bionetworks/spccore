@@ -310,7 +310,7 @@ class TestCache:
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
-    def test_remove_single_path_not_in_cache_with_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
+    def test_remove_single_path_not_in_cache_with_delete_files(self, cache, file_handle_id, cache_dir, file_path):
         with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
                 patch.object(os.path, "exists", return_value=True) as mock_exists, \
                 patch.object(os, "remove") as mock_remove, \
