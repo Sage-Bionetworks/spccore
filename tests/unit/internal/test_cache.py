@@ -10,6 +10,7 @@ from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, 
 def test_private_get_file_handle_id(cache_dir, file_handle_id):
     assert _get_file_handle_id(cache_dir) == file_handle_id
 
+
 # test _cache_dirs
 def test_private_cache_dirs_not_exist():
     with patch.object(os, "listdir", return_value=list()) as mock_listdir, \
@@ -225,12 +226,12 @@ class TestCache:
     def test_register_file_path_not_exist(self, cache, file_handle_id, file_path, cache_dir):
         iso_time = '2019-07-01T00:03:01.000Z'
         with pytest.raises(ValueError), \
-             patch.object(os.path, "exists", return_value=False) as mock_exists, \
-             patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
-             patch("spccore.internal.cache.get_modified_time_in_iso", return_value=iso_time) as mock_get_mtime, \
-             patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
-             patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
-             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+                patch.object(os.path, "exists", return_value=False) as mock_exists, \
+                patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch("spccore.internal.cache.get_modified_time_in_iso", return_value=iso_time) as mock_get_mtime, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
             cache.register(file_handle_id, file_path)
             mock_exists.assert_called_once_with(file_path)
             mock_get_cache_dir.assert_not_called()
@@ -243,11 +244,11 @@ class TestCache:
         iso_time = '2019-07-01T00:03:01.000Z'
         expected_cache_map = {file_path: iso_time}
         with patch.object(os.path, "exists", return_value=True) as mock_exists, \
-             patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
-             patch("spccore.internal.cache.get_modified_time_in_iso", return_value=iso_time) as mock_get_mtime, \
-             patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
-             patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
-             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+                patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch("spccore.internal.cache.get_modified_time_in_iso", return_value=iso_time) as mock_get_mtime, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
             assert expected_cache_map == cache.register(file_handle_id, file_path)
             mock_exists.assert_called_once_with(file_path)
             mock_get_cache_dir.assert_called_once_with(file_handle_id)
