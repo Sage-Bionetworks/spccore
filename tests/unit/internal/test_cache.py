@@ -19,14 +19,14 @@ def test_private_purge_cache_dir(cache_dir, file_path):
         file_path: '2019-07-01T00:00:00.000Z',
         "newer": '2019-07-01T00:00:00.001Z',
     }
-    removed = ["older", "not_exist"]
+    removed = {"older", "not_exist"}
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
-        assert removed == _purge_cache_dir(cutoff_date, cache_dir, False)
+        assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, False))
         mock_lock.assert_called_once_with()
         mock_get_cache_map.assert_called_once_with(cache_dir)
         assert mock_exists.call_args_list == [call("older"),
@@ -48,14 +48,14 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
         file_path: '2019-07-01T00:00:00.000Z',
         "newer": '2019-07-01T00:00:00.001Z',
     }
-    removed = ["older", "not_exist"]
+    removed = {"older", "not_exist"}
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
-        assert removed == _purge_cache_dir(cutoff_date, cache_dir, True)
+        assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, True))
         mock_lock.assert_called_once_with()
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_exists.assert_not_called()
@@ -70,14 +70,14 @@ def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
         file_path: '2019-06-30T23:59:59.999Z',
         "not_exist": '2019-01-30T23:59:59.999Z',
     }
-    removed = [file_path, "not_exist"]
+    removed = {file_path, "not_exist"}
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
-        assert removed == _purge_cache_dir(cutoff_date, cache_dir, False)
+        assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, False))
         mock_lock.assert_called_once_with()
         mock_get_cache_map.assert_called_once_with(cache_dir)
         assert mock_exists.call_args_list == [call(file_path),
@@ -117,8 +117,8 @@ def test_private_cache_dirs_with_invalid_dirs():
             patch.object(os.path, "isdir", return_value=True) as mock_isdir, \
             patch.object(os.path, "exists", return_value=True) as mock_exists:
         dirs = _cache_dirs(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
-        assert list(dirs) == [os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123"),
-                              os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")]
+        assert set(dirs) == {os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123"),
+                             os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")}
         assert mock_listdir.call_args_list == [call(SYNAPSE_DEFAULT_CACHE_ROOT_DIR),
                                                call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123"))]
         assert mock_isdir.call_args_list == [call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123")),
@@ -414,12 +414,11 @@ class TestCache:
     def test_purge(self, cache, cache_dir, file_handle_id, file_path):
         other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
         before_date = datetime.datetime(2019, 7, 2)
-        expected = [file_path]
         with patch("spccore.internal.cache._cache_dirs",
                    return_value=[cache_dir, other_dir]) as mock_private_cache_dirs, \
                 patch("spccore.internal.cache._purge_cache_dir",
                       side_effect=([file_path], list())) as mock_purge_cache_dir:
-            assert expected == cache.purge(before_date)
+            assert [file_path] == cache.purge(before_date)
             mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
             assert mock_purge_cache_dir.call_args_list == [call(before_date, cache_dir, False),
                                                            call(before_date, other_dir, False)]
@@ -427,12 +426,11 @@ class TestCache:
     def test_purge_dry_run(self, cache, cache_dir, file_handle_id):
         other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
         before_date = datetime.datetime(2019, 7, 2)
-        expected = [file_path]
         with patch("spccore.internal.cache._cache_dirs",
                    return_value=[cache_dir, other_dir]) as mock_private_cache_dirs, \
                 patch("spccore.internal.cache._purge_cache_dir",
                       side_effect=([file_path], list())) as mock_purge_cache_dir:
-            assert expected == cache.purge(before_date, dry_run=True)
+            assert [file_path] == cache.purge(before_date, dry_run=True)
             mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
             assert mock_purge_cache_dir.call_args_list == [call(before_date, cache_dir, True),
                                                            call(before_date, other_dir, True)]
