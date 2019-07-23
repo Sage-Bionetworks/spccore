@@ -8,6 +8,12 @@ def test_from_epoch_time_to_iso():
     assert from_epoch_time_to_iso(-6106060800.0) == '1776-07-04T00:00:00.000Z'
 
 
+def test_from_iso_to_datetime():
+    assert from_iso_to_datetime('1970-01-01T00:00:00.000Z') == UNIX_EPOCH
+    assert from_iso_to_datetime('2019-07-01T00:03:00.999Z') == datetime.datetime(2019, 7, 1, 0, 3, 0, 999000)
+    assert from_iso_to_datetime('1776-07-04T00:00:00.000Z') == datetime.datetime(1776, 7, 4, 0, 0, 0)
+
+
 def test_from_datetime_to_iso():
     assert from_datetime_to_iso(UNIX_EPOCH) == '1970-01-01T00:00:00.000Z'
     assert from_datetime_to_iso(datetime.datetime(2019, 7, 1, 0, 3, 0, 999499)) == '2019-07-01T00:03:00.999Z'
