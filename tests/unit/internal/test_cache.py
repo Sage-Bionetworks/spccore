@@ -330,36 +330,28 @@ class TestCache:
         with pytest.raises(TypeError):
             cache.purge(0)
 
-    def test_purge(self, cache, cache_dir, file_handle_id):
+    def test_purge(self, cache, cache_dir, file_handle_id, file_path):
         other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
         before_date = datetime.datetime(2019, 7, 2)
-        mtime = from_datetime_to_epoch_time(datetime.datetime(2019, 7, 1))
+        expected = [file_path]
         with patch("spccore.internal.cache._cache_dirs",
                    return_value=[cache_dir, other_dir]) as mock_private_cache_dirs, \
-                patch("spccore.internal.cache.get_modified_time",
-                      side_effect=(mtime, from_datetime_to_epoch_time(before_date))) as mock_get_mtime, \
-                patch("spccore.internal.cache.Cache.remove") as mock_remove, \
-                patch.object(shutil, "rmtree") as mock_rmtree:
-            assert 1 == cache.purge(before_date)
+                patch("spccore.internal.cache._purge_cache_dir",
+                      side_effect=([file_path], list())) as mock_purge_cache_dir:
+            assert expected == cache.purge(before_date)
             mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
-            assert mock_get_mtime.call_args_list == [call(os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)),
-                                                     call(os.path.join(other_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME))]
-            mock_remove.assert_called_once_with(file_handle_id)
-            mock_rmtree.assert_called_once_with(cache_dir)
+            assert mock_purge_cache_dir.call_args_list == [call(before_date, cache_dir, False),
+                                                           call(before_date, other_dir, False)]
 
     def test_purge_dry_run(self, cache, cache_dir, file_handle_id):
         other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
         before_date = datetime.datetime(2019, 7, 2)
-        mtime = from_datetime_to_epoch_time(datetime.datetime(2019, 7, 1))
+        expected = [file_path]
         with patch("spccore.internal.cache._cache_dirs",
                    return_value=[cache_dir, other_dir]) as mock_private_cache_dirs, \
-                patch("spccore.internal.cache.get_modified_time",
-                      side_effect=(mtime, from_datetime_to_epoch_time(before_date))) as mock_get_mtime, \
-                patch("spccore.internal.cache.Cache.remove") as mock_remove, \
-                patch.object(shutil, "rmtree") as mock_rmtree:
-            assert 1 == cache.purge(before_date, dry_run=True)
+                patch("spccore.internal.cache._purge_cache_dir",
+                      side_effect=([file_path], list())) as mock_purge_cache_dir:
+            assert expected == cache.purge(before_date, dry_run=True)
             mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
-            assert mock_get_mtime.call_args_list == [call(os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)),
-                                                     call(os.path.join(other_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME))]
-            mock_remove.assert_not_called()
-            mock_rmtree.assert_not_called()
+            assert mock_purge_cache_dir.call_args_list == [call(before_date, cache_dir, True),
+                                                           call(before_date, other_dir, True)]
