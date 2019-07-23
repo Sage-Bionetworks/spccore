@@ -13,7 +13,7 @@ class Cache:
     https://sagebionetworks.jira.com/wiki/spaces/SYNR/pages/34373660/Common+Client+Command+set+and+Cache+C4
     """
 
-    def __init__(self, *, cache_root_dir: str = SYNAPSE_DEFAULT_CACHE_ROOT_DIR):
+    def __init__(self, *, cache_root_dir: str = SYNAPSE_DEFAULT_CACHE_ROOT_DIR) -> None:
         """
         Create an instance of the Cache
 
