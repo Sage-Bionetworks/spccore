@@ -3,7 +3,88 @@ from unittest.mock import patch, call, mock_open
 
 from spccore.internal.cache import *
 from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, _get_cache_map, _get_file_handle_id, \
-    _get_all_non_modified_paths
+    _get_all_non_modified_paths, _purge_cache_dir
+
+
+# test _purge_cache_dir
+def test_private_purge_cache_dir(cache_dir, file_path):
+    cutoff_date = datetime.datetime(2019, 7, 1)
+    cache_map = {
+        file_path: '2019-07-01T00:00:00.000Z',
+        "newer": '2019-07-01T00:00:00.001Z',
+        "older": '2019-06-30T23:59:59.999Z',
+        "not_exist": '2019-01-30T23:59:59.999Z',
+    }
+    remained = {
+        file_path: '2019-07-01T00:00:00.000Z',
+        "newer": '2019-07-01T00:00:00.001Z',
+    }
+    removed = ["older", "not_exist"]
+    with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
+            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os, "remove") as mock_remove, \
+            patch.object(shutil, "rmtree") as mock_remove_tree, \
+            patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+        assert removed == _purge_cache_dir(cutoff_date, cache_dir, False)
+        mock_lock.assert_called_once_with()
+        mock_get_cache_map.assert_called_once_with(cache_dir)
+        assert mock_exists.call_args_list == [call("older"),
+                                              call("not_exist")]
+        mock_remove.assert_called_once_with("older")
+        mock_remove_tree.assert_not_called()
+        mock_write_cache_map.assert_called_once_with(remained, cache_dir)
+
+
+def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
+    cutoff_date = datetime.datetime(2019, 7, 1)
+    cache_map = {
+        file_path: '2019-07-01T00:00:00.000Z',
+        "newer": '2019-07-01T00:00:00.001Z',
+        "older": '2019-06-30T23:59:59.999Z',
+        "not_exist": '2019-01-30T23:59:59.999Z',
+    }
+    remained = {
+        file_path: '2019-07-01T00:00:00.000Z',
+        "newer": '2019-07-01T00:00:00.001Z',
+    }
+    removed = ["older", "not_exist"]
+    with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
+            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os, "remove") as mock_remove, \
+            patch.object(shutil, "rmtree") as mock_remove_tree, \
+            patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+        assert removed == _purge_cache_dir(cutoff_date, cache_dir, True)
+        mock_lock.assert_called_once_with()
+        mock_get_cache_map.assert_called_once_with(cache_dir)
+        mock_exists.assert_not_called()
+        mock_remove.assert_not_called()
+        mock_remove_tree.assert_not_called()
+        mock_write_cache_map.assert_not_called()
+
+
+def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
+    cutoff_date = datetime.datetime(2019, 7, 1)
+    cache_map = {
+        file_path: '2019-06-30T23:59:59.999Z',
+        "not_exist": '2019-01-30T23:59:59.999Z',
+    }
+    removed = [file_path, "not_exist"]
+    with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
+            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os, "remove") as mock_remove, \
+            patch.object(shutil, "rmtree") as mock_remove_tree, \
+            patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+        assert removed == _purge_cache_dir(cutoff_date, cache_dir, False)
+        mock_lock.assert_called_once_with()
+        mock_get_cache_map.assert_called_once_with(cache_dir)
+        assert mock_exists.call_args_list == [call(file_path),
+                                              call("not_exist")]
+        mock_remove.assert_called_once_with(file_path)
+        mock_remove_tree.assert_called_once_with(cache_dir)
+        mock_write_cache_map.assert_not_called()
 
 
 # test _get_file_handle_id
