@@ -113,7 +113,7 @@ class Cache:
 
         return removed
 
-    def purge(self, before_date: datetime.datetime, *, dry_run: bool = False) -> int:
+    def purge(self, before_date: datetime.datetime, *, dry_run: bool = False) -> list:
         """
         Purge the cache. Use with caution. Delete files whose cache maps were last updated prior to the given date.
         Deletes .cacheMap files and files that the cache map point to.
@@ -121,28 +121,47 @@ class Cache:
         This function is recommended when working with PHI or sensitive data.
 
         :param before_date: the cutoff time to look up
-        :param dry_run: Set to True to list all cache dir that would be removed. Default False.
-        :return: the number of file handle id directories that has been removed
+        :param dry_run: Set to True to list all cache dir that would be removed without actually deleting the files.
+            Default False.
+        :return: the list of file paths that has been removed
         """
         validate_type(datetime.datetime, before_date, "before_date")
-        before_date = from_datetime_to_epoch_time(before_date)
-        count = 0
+        removed = list()
         for cache_dir in _cache_dirs(self.cache_root_dir):
-            # _get_modified_time returns None if the cache map file doesn't exist.
-            # We are going to purge directories in the cache that have no .cacheMap file.
-            last_modified_time = get_modified_time(os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME))
-            if last_modified_time is None or before_date > last_modified_time:
-                if dry_run:
-                    print(cache_dir)
-                else:
-                    self.remove(_get_file_handle_id(cache_dir))
-                    shutil.rmtree(cache_dir)
-                count += 1
-        return count
+            removed.extend(_purge_cache_dir(before_date, cache_dir, dry_run))
+        return removed
 
 
 # Helper methods
 # These methods are not designed to be used outside of this module.
+
+
+def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bool) -> list:
+    """
+    Purge a single cache directory and remove all files that are recorded before a set date.
+
+    :param before_date: the cutoff date
+    :param cache_dir: the target directory
+    :param dry_run: Set to True to return the list of file paths that would be removed without deleting the files.
+    :return: a list of file paths that were removed
+    """
+    removed = list()
+    remain_map = {}
+    with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
+        cache_map = _get_cache_map(cache_dir)
+        for file_path, cache_time in cache_map.items():
+            if before_date > from_iso_to_datetime(cache_time):
+                if not dry_run and os.path.exists(file_path):
+                    os.remove(file_path)
+                removed.append(file_path)
+            else:
+                remain_map[file_path] = cache_time
+        if not dry_run:
+            if not remain_map:
+                shutil.rmtree(cache_dir)
+            else:
+                _write_cache_map(remain_map, cache_dir)
+    return removed
 
 
 def _get_all_non_modified_paths(cache_dir: str) -> list:
