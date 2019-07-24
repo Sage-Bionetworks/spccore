@@ -37,7 +37,7 @@ class Cache:
                             str(file_handle_id % SYNAPSE_DEFAULT_CACHE_BUCKET_SIZE),
                             str(file_handle_id))
 
-    def get_all_unmodified_cached_file_paths(self, file_handle_id: int) -> list:
+    def get_all_unmodified_cached_file_paths(self, file_handle_id: int) -> typing.List[str]:
         """
         Performs a cache Read and retrieve all file paths for the given file handle id from the cache
 
@@ -78,7 +78,7 @@ class Cache:
 
         return cache_map
 
-    def remove(self, file_handle_id: int, *, file_path: str = None, delete_file: bool = False) -> list:
+    def remove(self, file_handle_id: int, *, file_path: str = None, delete_file: bool = False) -> typing.List[str]:
         """
         Performs a cache Write to remove a file(s) from the cache.
 
@@ -86,7 +86,7 @@ class Cache:
         :param file_path: the file_path to look up and remove.
             Default None, which will remove all copies found in the cache.
         :param delete_file: Set to True to remove the actual file. Default False.
-        :returns: A list of files removed
+        :returns: A list of file paths removed
         :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
@@ -117,7 +117,7 @@ class Cache:
 
         return removed
 
-    def purge(self, before_date: datetime.datetime, *, dry_run: bool = False) -> list:
+    def purge(self, before_date: datetime.datetime, *, dry_run: bool = False) -> typing.List[str]:
         """
         Purge the cache. Use with caution. Delete files whose cache maps were last updated prior to the given date.
         Deletes .cacheMap files and files that the cache map point to.
@@ -141,7 +141,7 @@ class Cache:
 # These methods are not designed to be used outside of this module.
 
 
-def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bool) -> list:
+def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bool) -> typing.List[str]:
     """
     Purge a single cache directory and remove all files that are recorded before a set date.
 
@@ -150,7 +150,7 @@ def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bo
     :param dry_run: Set to True to return the list of file paths that would be removed without deleting the files.
     :return: a list of file paths that were removed
     """
-    removed = list()
+    removed = []
     remain_map = {}
     with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
         cache_map = _get_cache_map(cache_dir)
@@ -169,7 +169,7 @@ def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bo
     return removed
 
 
-def _get_all_non_modified_paths(cache_dir: str) -> list:
+def _get_all_non_modified_paths(cache_dir: str) -> typing.List[str]:
     """
     Perform a cache map read and return all non-modified paths in the given cache directory
 
@@ -177,7 +177,7 @@ def _get_all_non_modified_paths(cache_dir: str) -> list:
     :return: all non-modified paths
     """
     cache_map = _get_cache_map(cache_dir)
-    non_modified_paths = list()
+    non_modified_paths = []
     for path in cache_map:
         if get_modified_time_in_iso(path) == cache_map.get(path):
             non_modified_paths.append(path)
@@ -232,7 +232,7 @@ def _is_modified(cache_dir: str, file_path: str) -> bool:
     return cache_time is None or cache_time == get_modified_time_in_iso(file_path)
 
 
-def _cache_dirs(cache_root_dir: str) -> list:
+def _cache_dirs(cache_root_dir: str) -> typing.List[str]:
     """
     Generate a list of all cache dirs, directories of the form:
     [cache_root_dir]/949/59949
