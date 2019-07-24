@@ -22,6 +22,18 @@ Example::
 UNIX_EPOCH = datetime.datetime(1970, 1, 1, 0, 0)
 
 
+def from_iso_to_datetime(iso: str) -> datetime.datetime:
+    """
+    Convert iso string to datetime
+
+    :param iso: the string to convert
+    :return: the time in datetime
+    """
+    # turn the string into microsecond time: '2019-07-01T00:03:01.000Z' -> '2019-07-01T00:03:01.000000Z'
+    iso = iso[:len(iso)-1] + '000' + iso[len(iso)-1:]
+    return datetime.datetime.strptime(iso, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
 def from_epoch_time_to_iso(epoch_time: float) -> str:
     """
     Convert epoch time in millisecond precision since midnight Jan 1, 1970 to a string in ISO format.

@@ -1,3 +1,4 @@
+import os
 import requests
 from .__version__ import __version__
 
@@ -25,3 +26,7 @@ SYNAPSE_DEFAULT_HTTP_HEADERS = {CONTENT_TYPE_HEADER: 'application/json; charset=
                                 'Accept': 'application/json; charset=UTF-8'}
 
 SYNAPSE_DEFAULT_STORAGE_LOCATION_ID = 1
+
+SYNAPSE_DEFAULT_CACHE_ROOT_DIR = os.path.expanduser(os.path.join('~', '.synapseCache'))
+SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME = ".cacheMap"
+SYNAPSE_DEFAULT_CACHE_BUCKET_SIZE = 1000
