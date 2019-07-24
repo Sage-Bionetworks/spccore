@@ -114,13 +114,13 @@ def test_private_cache_dirs_with_invalid_dirs():
         assert set(dirs) == {os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123"),
                              os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")}
         mock_listdir.assert_has_calls([call(SYNAPSE_DEFAULT_CACHE_ROOT_DIR),
-                                        call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123"))])
+                                       call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123"))])
         mock_isdir.assert_has_calls([call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123")),
-                                      call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123")),
-                                      call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "other")),
-                                      call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")),
-                                      call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "fake_name")),
-                                      call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "another1"))])
+                                     call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "987123")),
+                                     call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "other")),
+                                     call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "123", "567123")),
+                                     call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "fake_name")),
+                                     call(os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "another1"))])
         mock_exists.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
 
 
@@ -209,7 +209,7 @@ def test_private_get_all_non_modified_paths(cache_dir):
         assert _get_all_non_modified_paths(cache_dir) == ["/some/other/path/to/file2.txt"]
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_get_mtime_in_iso.assert_has_calls([call("/some/path/to/file.txt"),
-                                                 call("/some/other/path/to/file2.txt")])
+                                                call("/some/other/path/to/file2.txt")])
 
 
 @pytest.fixture
@@ -415,7 +415,7 @@ class TestCache:
             assert [file_path] == cache.purge(before_date)
             mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
             mock_purge_cache_dir.assert_has_calls([call(before_date, cache_dir, False),
-                                                    call(before_date, other_dir, False)])
+                                                   call(before_date, other_dir, False)])
 
     def test_purge_dry_run(self, cache, cache_dir, file_handle_id):
         other_dir = os.path.join(SYNAPSE_DEFAULT_CACHE_ROOT_DIR, "456", "124456")
@@ -427,4 +427,4 @@ class TestCache:
             assert [file_path] == cache.purge(before_date, dry_run=True)
             mock_private_cache_dirs.assert_called_once_with(SYNAPSE_DEFAULT_CACHE_ROOT_DIR)
             mock_purge_cache_dir.assert_has_calls([call(before_date, cache_dir, True),
-                                                    call(before_date, other_dir, True)])
+                                                   call(before_date, other_dir, True)])
