@@ -49,7 +49,7 @@ class Cache:
 
         cache_dir = self.get_cache_dir(file_handle_id)
         if not os.path.exists(cache_dir):
-            return list()
+            return []
         return _get_all_non_modified_paths(cache_dir)
 
     def register(self, file_handle_id: int, file_path: str) -> dict:
@@ -131,7 +131,7 @@ class Cache:
         :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(datetime.datetime, before_date, "before_date")
-        removed = list()
+        removed = []
         for cache_dir in _cache_dirs(self.cache_root_dir):
             removed.extend(_purge_cache_dir(before_date, cache_dir, dry_run))
         return removed
@@ -238,7 +238,7 @@ def _cache_dirs(cache_root_dir: str) -> typing.List[str]:
     [cache_root_dir]/949/59949
     """
     if not os.path.exists(cache_root_dir):
-        return list()
+        return []
     for hashed_dir in os.listdir(cache_root_dir):
         path_to_hashed_dir = os.path.join(cache_root_dir, hashed_dir)
         if os.path.isdir(path_to_hashed_dir) and re.match(r'\d+', hashed_dir):
