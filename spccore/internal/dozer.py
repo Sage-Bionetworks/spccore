@@ -15,7 +15,11 @@ _listeners = []
 
 
 def add_listener(listener: typing.Callable) -> None:
-    """Register a new callable listener"""
+    """
+    Register a new callable listener
+
+    :raises ValueError: when one or more parameters have invalid value
+    """
 
     if not callable(listener):
         raise ValueError("listener is not callable")

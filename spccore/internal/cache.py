@@ -18,6 +18,7 @@ class Cache:
         Create an instance of the Cache
 
         :param cache_root_dir: the root directory of the Synapse cache
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(str, cache_root_dir, "cache_root_dir")
         self.cache_root_dir = cache_root_dir
@@ -28,6 +29,7 @@ class Cache:
 
         :param file_handle_id: the file_handle_id to look up
         :return: the location on the cache that file_handle_id is assigned to
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
 
@@ -41,6 +43,7 @@ class Cache:
 
         :param file_handle_id: the file handle id to look up
         :returns: The paths to the file in the cache if the file exists and has not been modified
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
 
@@ -56,6 +59,7 @@ class Cache:
         :param file_handle_id: the file handle id of the file
         :param file_path: the actual file path
         :return: the cache map
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
         validate_type(str, file_path, "file_path")
@@ -82,8 +86,8 @@ class Cache:
         :param file_path: the file_path to look up and remove.
             Default None, which will remove all copies found in the cache.
         :param delete_file: Set to True to remove the actual file. Default False.
-
         :returns: A list of files removed
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
         removed = []
@@ -124,6 +128,7 @@ class Cache:
         :param dry_run: Set to True to list all cache dir that would be removed without actually deleting the files.
             Default False.
         :return: the list of file paths that has been removed
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(datetime.datetime, before_date, "before_date")
         removed = list()
