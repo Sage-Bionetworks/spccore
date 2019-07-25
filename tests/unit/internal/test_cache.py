@@ -23,9 +23,14 @@ def test_private_purge_cache_dir(cache_dir, file_path):
         "newer": '2019-07-01T00:00:00.001Z',
     }
     removed = {"older", "not_exist"}
+
+    def side_effect(path):
+        values = {"older": True, "not_exist": False}
+        return values[path]
+
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
@@ -47,9 +52,10 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
         "not_exist": '2019-01-30T23:59:59.999Z',
     })
     removed = {"older", "not_exist"}
+
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os.path, "exists") as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
@@ -69,9 +75,14 @@ def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
         "not_exist": '2019-01-30T23:59:59.999Z',
     })
     removed = {file_path, "not_exist"}
+
+    def side_effect(path):
+        values = {file_path: True, "not_exist": False}
+        return values[path]
+
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
@@ -208,9 +219,16 @@ def test_private_get_all_non_modified_paths(cache_dir):
         "/some/path/to/file.txt": '2019-07-01T00:00:00.000Z',
         "/some/other/path/to/file2.txt": '2019-07-01T00:03:01.000Z'
     })
-    mtimes = ('2019-07-01T00:00:00.001Z', '2019-07-01T00:03:01.000Z')
+
+    def side_effect(path):
+        values = {
+            "/some/path/to/file.txt": '2019-07-01T00:00:00.001Z',
+            "/some/other/path/to/file2.txt": '2019-07-01T00:03:01.000Z'
+        }
+        return values[path]
+
     with patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
+            patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=side_effect) as mock_get_mtime_in_iso:
         assert _get_all_non_modified_paths(cache_dir) == ["/some/other/path/to/file2.txt"]
         mock_get_cache_map.assert_called_once_with(cache_dir)
         assert_call_list_equals(mock_get_mtime_in_iso.call_args_list,
