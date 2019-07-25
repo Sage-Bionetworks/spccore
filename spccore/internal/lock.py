@@ -28,6 +28,7 @@ Therefore, {do something} and {do something else} will be executed in sequential
 LOCK_DEFAULT_MAX_AGE = datetime.timedelta(seconds=10)
 DEFAULT_BLOCKING_TIMEOUT = datetime.timedelta(seconds=70)
 CACHE_UNLOCK_WAIT_TIME = 0.5
+LOCK_FILE_SUFFIX = 'lock'
 
 
 class LockedException(Exception):
@@ -38,7 +39,6 @@ class Lock(object):
     """
     Implements a lock by making a directory named <lock_name>.lock
     """
-    SUFFIX = 'lock'
 
     def __init__(self,
                  name: str,
@@ -50,7 +50,7 @@ class Lock(object):
         self.name = name
         self.held = False
         self.current_working_directory = current_working_directory if current_working_directory else os.getcwd()
-        self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, Lock.SUFFIX]))
+        self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, LOCK_FILE_SUFFIX]))
         self.max_age = max_age
         self.default_blocking_timeout = default_blocking_timeout
 
@@ -111,7 +111,7 @@ class Lock(object):
         :raises OSError: when it fails to acquire a lock
         """
         if self.held:
-            return True
+            return self.renew()
         try:
             os.makedirs(self.lock_dir_path)
             self.held = True
@@ -131,9 +131,16 @@ class Lock(object):
                 self.held = False
         return self.held
 
+    def renew(self) -> bool:
+        if self.held and os.path.exists(self.lock_dir_path):
+            os.utime(self.lock_dir_path, (0, time.time()))
+            return True
+        return False
+
     # Make the lock object a Context Manager
-    def __enter__(self) -> None:
+    def __enter__(self):
         self.blocking_acquire()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.release()

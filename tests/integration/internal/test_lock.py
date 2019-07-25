@@ -44,6 +44,11 @@ def test_lock_timeout():
         time.sleep(1.1)
         assert user1_lock._get_age() > 1.0
         assert user2_lock._acquire_lock(break_old_locks=False) is False
+        user1_lock.renew()
+        assert user1_lock._get_age() < 1.0
+        assert user2_lock._acquire_lock(break_old_locks=True) is False
+        time.sleep(1.1)
+        assert user1_lock._get_age() > 1.0
         assert user2_lock._acquire_lock(break_old_locks=True)
 
 
@@ -78,3 +83,4 @@ def test_multi_threaded():
 
     for key in counts:
         assert counts[key] == set(range(NUMBER_OF_TIMES_PER_THREAD))
+
