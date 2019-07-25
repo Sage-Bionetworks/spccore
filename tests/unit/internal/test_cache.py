@@ -1,3 +1,4 @@
+import collections
 import pytest
 from unittest.mock import patch, call, mock_open
 
@@ -203,10 +204,10 @@ def test_private_get_cache_map_exist(cache_dir):
 
 # test _get_all_non_modified_paths
 def test_private_get_all_non_modified_paths(cache_dir):
-    cache_map = {
+    cache_map = collections.OrderedDict({
         "/some/path/to/file.txt": '2019-07-01T00:00:00.000Z',
         "/some/other/path/to/file2.txt": '2019-07-01T00:03:01.000Z'
-    }
+    })
     mtimes = ('2019-07-01T00:00:00.001Z', '2019-07-01T00:03:01.000Z')
     with patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
