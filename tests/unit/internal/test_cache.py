@@ -1,5 +1,7 @@
+import collections
 import pytest
 from unittest.mock import patch, call, mock_open
+
 
 from spccore.internal.cache import *
 from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, _get_cache_map, _get_file_handle_id, \
@@ -9,20 +11,25 @@ from spccore.internal.cache import _cache_dirs, _is_modified, _write_cache_map, 
 # test _purge_cache_dir
 def test_private_purge_cache_dir(cache_dir, file_path):
     cutoff_date = datetime.datetime(2019, 7, 1)
-    cache_map = {
-        file_path: '2019-07-01T00:00:00.000Z',
-        "newer": '2019-07-01T00:00:00.001Z',
-        "older": '2019-06-30T23:59:59.999Z',
-        "not_exist": '2019-01-30T23:59:59.999Z',
-    }
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-07-01T00:00:00.000Z'),
+        ("newer", '2019-07-01T00:00:00.001Z'),
+        ("older", '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
     remained = {
         file_path: '2019-07-01T00:00:00.000Z',
         "newer": '2019-07-01T00:00:00.001Z',
     }
     removed = {"older", "not_exist"}
+
+    def side_effect(path):
+        values = {"older": True, "not_exist": False}
+        return values[path]
+
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
@@ -37,16 +44,17 @@ def test_private_purge_cache_dir(cache_dir, file_path):
 
 def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
     cutoff_date = datetime.datetime(2019, 7, 1)
-    cache_map = {
-        file_path: '2019-07-01T00:00:00.000Z',
-        "newer": '2019-07-01T00:00:00.001Z',
-        "older": '2019-06-30T23:59:59.999Z',
-        "not_exist": '2019-01-30T23:59:59.999Z',
-    }
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-07-01T00:00:00.000Z'),
+        ("newer", '2019-07-01T00:00:00.001Z'),
+        ("older", '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
     removed = {"older", "not_exist"}
+
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os.path, "exists") as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
@@ -61,14 +69,19 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
 
 def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
     cutoff_date = datetime.datetime(2019, 7, 1)
-    cache_map = {
-        file_path: '2019-06-30T23:59:59.999Z',
-        "not_exist": '2019-01-30T23:59:59.999Z',
-    }
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
     removed = {file_path, "not_exist"}
+
+    def side_effect(path):
+        values = {file_path: True, "not_exist": False}
+        return values[path]
+
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch.object(os.path, "exists", side_effect=(True, False)) as mock_exists, \
+            patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
             patch.object(shutil, "rmtree") as mock_remove_tree, \
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
@@ -199,13 +212,20 @@ def test_private_get_cache_map_exist(cache_dir):
 
 # test _get_all_non_modified_paths
 def test_private_get_all_non_modified_paths(cache_dir):
-    cache_map = {
-        "/some/path/to/file.txt": '2019-07-01T00:00:00.000Z',
-        "/some/other/path/to/file2.txt": '2019-07-01T00:03:01.000Z'
-    }
-    mtimes = ('2019-07-01T00:00:00.001Z', '2019-07-01T00:03:01.000Z')
+    cache_map = collections.OrderedDict([
+        ("/some/path/to/file.txt", '2019-07-01T00:00:00.000Z'),
+        ("/some/other/path/to/file2.txt", '2019-07-01T00:03:01.000Z')
+    ])
+
+    def side_effect(path):
+        values = {
+            "/some/path/to/file.txt": '2019-07-01T00:00:00.001Z',
+            "/some/other/path/to/file2.txt": '2019-07-01T00:03:01.000Z'
+        }
+        return values[path]
+
     with patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
-            patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=mtimes) as mock_get_mtime_in_iso:
+            patch("spccore.internal.cache.get_modified_time_in_iso", side_effect=side_effect) as mock_get_mtime_in_iso:
         assert _get_all_non_modified_paths(cache_dir) == ["/some/other/path/to/file2.txt"]
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_get_mtime_in_iso.assert_has_calls([call("/some/path/to/file.txt"),

@@ -8,7 +8,7 @@ TEST_CACHE_ROOT_DIR = "cache_integration_test"
 @pytest.fixture
 def cache() -> Cache:
     os.makedirs(TEST_CACHE_ROOT_DIR)
-    cache = Cache()
+    cache = Cache(cache_root_dir=TEST_CACHE_ROOT_DIR)
     cache.purge(from_epoch_time_to_datetime(time.time()))
     yield cache
     cache.purge(from_epoch_time_to_datetime(time.time()))

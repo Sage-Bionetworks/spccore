@@ -62,6 +62,7 @@ class Lock(object):
             If none is set, this function will use the default_blocking_timeout.
         :param break_old_locks: set to False to ignore old locks. Default True.
         :return: True on success; otherwise throws a LockedException.
+        :raises LockedException: when it fails to acquire a lock.
         """
         if timeout is None:
             timeout = self.default_blocking_timeout
@@ -75,7 +76,11 @@ class Lock(object):
                               " Please try again later.".format(**{'timeout': str(timeout)}))
 
     def release(self) -> None:
-        """Release lock or do nothing if lock is not held"""
+        """
+        Release lock or do nothing if lock is not held
+
+        :raises OSError: when it fails to release a lock
+        """
         if self.held:
             try:
                 shutil.rmtree(self.lock_dir_path)
@@ -85,7 +90,11 @@ class Lock(object):
                     raise
 
     def _get_age(self) -> int:
-        """Return the age of the lock"""
+        """
+        Return the age of the lock
+
+        :raises OSError: when it fails to retrieve the lock's age
+        """
         try:
             return time.time() - os.path.getmtime(self.lock_dir_path)
         except OSError as err:
@@ -99,6 +108,7 @@ class Lock(object):
 
         :param break_old_locks: set to False to ignore old locks. Default True.
         :return: True on success; otherwise False.
+        :raises OSError: when it fails to acquire a lock
         """
         if self.held:
             return True

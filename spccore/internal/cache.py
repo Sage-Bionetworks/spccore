@@ -18,6 +18,7 @@ class Cache:
         Create an instance of the Cache
 
         :param cache_root_dir: the root directory of the Synapse cache
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(str, cache_root_dir, "cache_root_dir")
         self.cache_root_dir = cache_root_dir
@@ -28,6 +29,7 @@ class Cache:
 
         :param file_handle_id: the file_handle_id to look up
         :return: the location on the cache that file_handle_id is assigned to
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
 
@@ -35,18 +37,19 @@ class Cache:
                             str(file_handle_id % SYNAPSE_DEFAULT_CACHE_BUCKET_SIZE),
                             str(file_handle_id))
 
-    def get_all_unmodified_cached_file_paths(self, file_handle_id: int) -> list:
+    def get_all_unmodified_cached_file_paths(self, file_handle_id: int) -> typing.List[str]:
         """
         Performs a cache Read and retrieve all file paths for the given file handle id from the cache
 
         :param file_handle_id: the file handle id to look up
         :returns: The paths to the file in the cache if the file exists and has not been modified
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
 
         cache_dir = self.get_cache_dir(file_handle_id)
         if not os.path.exists(cache_dir):
-            return list()
+            return []
         return _get_all_non_modified_paths(cache_dir)
 
     def register(self, file_handle_id: int, file_path: str) -> dict:
@@ -56,6 +59,7 @@ class Cache:
         :param file_handle_id: the file handle id of the file
         :param file_path: the actual file path
         :return: the cache map
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
         validate_type(str, file_path, "file_path")
@@ -74,7 +78,7 @@ class Cache:
 
         return cache_map
 
-    def remove(self, file_handle_id: int, *, file_path: str = None, delete_file: bool = False) -> list:
+    def remove(self, file_handle_id: int, *, file_path: str = None, delete_file: bool = False) -> typing.List[str]:
         """
         Performs a cache Write to remove a file(s) from the cache.
 
@@ -82,8 +86,8 @@ class Cache:
         :param file_path: the file_path to look up and remove.
             Default None, which will remove all copies found in the cache.
         :param delete_file: Set to True to remove the actual file. Default False.
-
-        :returns: A list of files removed
+        :returns: A list of file paths removed
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(int, file_handle_id, "file_handle_id")
         removed = []
@@ -113,7 +117,7 @@ class Cache:
 
         return removed
 
-    def purge(self, before_date: datetime.datetime, *, dry_run: bool = False) -> list:
+    def purge(self, before_date: datetime.datetime, *, dry_run: bool = False) -> typing.List[str]:
         """
         Purge the cache. Use with caution. Delete files whose cache maps were last updated prior to the given date.
         Deletes .cacheMap files and files that the cache map point to.
@@ -124,9 +128,10 @@ class Cache:
         :param dry_run: Set to True to list all cache dir that would be removed without actually deleting the files.
             Default False.
         :return: the list of file paths that has been removed
+        :raises TypeError: when one or more parameters have invalid type
         """
         validate_type(datetime.datetime, before_date, "before_date")
-        removed = list()
+        removed = []
         for cache_dir in _cache_dirs(self.cache_root_dir):
             removed.extend(_purge_cache_dir(before_date, cache_dir, dry_run))
         return removed
@@ -136,7 +141,7 @@ class Cache:
 # These methods are not designed to be used outside of this module.
 
 
-def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bool) -> list:
+def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bool) -> typing.List[str]:
     """
     Purge a single cache directory and remove all files that are recorded before a set date.
 
@@ -145,7 +150,7 @@ def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bo
     :param dry_run: Set to True to return the list of file paths that would be removed without deleting the files.
     :return: a list of file paths that were removed
     """
-    removed = list()
+    removed = []
     remain_map = {}
     with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
         cache_map = _get_cache_map(cache_dir)
@@ -164,7 +169,7 @@ def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bo
     return removed
 
 
-def _get_all_non_modified_paths(cache_dir: str) -> list:
+def _get_all_non_modified_paths(cache_dir: str) -> typing.List[str]:
     """
     Perform a cache map read and return all non-modified paths in the given cache directory
 
@@ -172,7 +177,7 @@ def _get_all_non_modified_paths(cache_dir: str) -> list:
     :return: all non-modified paths
     """
     cache_map = _get_cache_map(cache_dir)
-    non_modified_paths = list()
+    non_modified_paths = []
     for path in cache_map:
         if get_modified_time_in_iso(path) == cache_map.get(path):
             non_modified_paths.append(path)
@@ -227,13 +232,13 @@ def _is_modified(cache_dir: str, file_path: str) -> bool:
     return cache_time is None or cache_time == get_modified_time_in_iso(file_path)
 
 
-def _cache_dirs(cache_root_dir: str) -> list:
+def _cache_dirs(cache_root_dir: str) -> typing.List[str]:
     """
     Generate a list of all cache dirs, directories of the form:
     [cache_root_dir]/949/59949
     """
     if not os.path.exists(cache_root_dir):
-        return list()
+        return []
     for hashed_dir in os.listdir(cache_root_dir):
         path_to_hashed_dir = os.path.join(cache_root_dir, hashed_dir)
         if os.path.isdir(path_to_hashed_dir) and re.match(r'\d+', hashed_dir):
