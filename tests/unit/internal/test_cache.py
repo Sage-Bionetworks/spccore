@@ -12,12 +12,12 @@ from tests.unit.mock_utils import assert_call_list_equals
 # test _purge_cache_dir
 def test_private_purge_cache_dir(cache_dir, file_path):
     cutoff_date = datetime.datetime(2019, 7, 1)
-    cache_map = collections.OrderedDict({
-        file_path: '2019-07-01T00:00:00.000Z',
-        "newer": '2019-07-01T00:00:00.001Z',
-        "older": '2019-06-30T23:59:59.999Z',
-        "not_exist": '2019-01-30T23:59:59.999Z',
-    })
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-07-01T00:00:00.000Z'),
+        ("newer", '2019-07-01T00:00:00.001Z'),
+        ("older", '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
     remained = {
         file_path: '2019-07-01T00:00:00.000Z',
         "newer": '2019-07-01T00:00:00.001Z',
@@ -45,12 +45,12 @@ def test_private_purge_cache_dir(cache_dir, file_path):
 
 def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
     cutoff_date = datetime.datetime(2019, 7, 1)
-    cache_map = collections.OrderedDict({
-        file_path: '2019-07-01T00:00:00.000Z',
-        "newer": '2019-07-01T00:00:00.001Z',
-        "older": '2019-06-30T23:59:59.999Z',
-        "not_exist": '2019-01-30T23:59:59.999Z',
-    })
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-07-01T00:00:00.000Z'),
+        ("newer", '2019-07-01T00:00:00.001Z'),
+        ("older", '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
     removed = {"older", "not_exist"}
 
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
@@ -70,10 +70,10 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
 
 def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
     cutoff_date = datetime.datetime(2019, 7, 1)
-    cache_map = collections.OrderedDict({
-        file_path: '2019-06-30T23:59:59.999Z',
-        "not_exist": '2019-01-30T23:59:59.999Z',
-    })
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
     removed = {file_path, "not_exist"}
 
     def side_effect(path):
@@ -215,10 +215,10 @@ def test_private_get_cache_map_exist(cache_dir):
 
 # test _get_all_non_modified_paths
 def test_private_get_all_non_modified_paths(cache_dir):
-    cache_map = collections.OrderedDict({
-        "/some/path/to/file.txt": '2019-07-01T00:00:00.000Z',
-        "/some/other/path/to/file2.txt": '2019-07-01T00:03:01.000Z'
-    })
+    cache_map = collections.OrderedDict([
+        ("/some/path/to/file.txt", '2019-07-01T00:00:00.000Z'),
+        ("/some/other/path/to/file2.txt", '2019-07-01T00:03:01.000Z')
+    ])
 
     def side_effect(path):
         values = {
