@@ -43,13 +43,31 @@ def test_lock_timeout():
         assert user2_lock._acquire_lock(break_old_locks=True) is False
         time.sleep(1.1)
         assert user1_lock._get_age() > 1.0
-        assert user2_lock._acquire_lock(break_old_locks=False) is False
+        assert user2_lock._acquire_lock(break_old_locks=True)
+
+
+def test_renew():
+    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=1))
+    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=1))
+
+    with user1_lock:
+        time.sleep(1.1)
+        assert user1_lock._get_age() > 1.0
         user1_lock.renew()
         assert user1_lock._get_age() < 1.0
         assert user2_lock._acquire_lock(break_old_locks=True) is False
         time.sleep(1.1)
         assert user1_lock._get_age() > 1.0
         assert user2_lock._acquire_lock(break_old_locks=True)
+
+
+def test_renew_with_expired():
+    user_lock = Lock("foo", max_age=datetime.timedelta(seconds=1))
+    with user_lock:
+        time.sleep(1.1)
+        assert user_lock._get_age() > 1.0
+        # expired but has not released
+        assert user_lock.renew() is False
 
 
 # Try to hammer away at the locking mechanism from multiple threads

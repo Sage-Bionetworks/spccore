@@ -132,9 +132,17 @@ class Lock(object):
         return self.held
 
     def renew(self) -> bool:
-        if self.held and os.path.exists(self.lock_dir_path):
-            os.utime(self.lock_dir_path, (0, time.time()))
-            return True
+        """
+        Renew the holding lock by touching the lock file.
+
+        :return: True for success; otherwise False.
+        """
+        if self.held and os.path.exists(self.lock_dir_path) and self._get_age() < self.max_age.total_seconds():
+            try:
+                os.utime(self.lock_dir_path, (0, time.time()))
+                return True
+            except OSError as err:
+                self.held = False
         return False
 
     # Make the lock object a Context Manager
