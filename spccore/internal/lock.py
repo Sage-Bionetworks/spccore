@@ -103,7 +103,8 @@ class Lock(object):
                 return True
             except OSError as err:
                 self.held = False
-        return False
+        self.held = False
+        return self.held
 
     def _get_age(self) -> int:
         """

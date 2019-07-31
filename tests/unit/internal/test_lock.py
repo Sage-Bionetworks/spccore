@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 from spccore.internal.lock import *
 
@@ -102,13 +102,14 @@ class TestLock:
                 patch.object(time, "time") as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()+1) as mock_get_age:
             assert lock._acquire_lock()
+            assert lock.held
             mock_renew.assert_called_once_with()
             mock_makedirs.assert_not_called()
             mock_utime.assert_not_called()
             mock_time.assert_not_called()
             mock_get_age.assert_not_called()
 
-    def test_private_acquire_lock_cannot_renew(self, lock):
+    def test_private_acquire_lock_success_acquire_after_renew_fails(self, lock):
         lock.held = True
         utime = 1
         with patch.object(lock, "renew", return_value=False) as mock_renew, \
@@ -117,21 +118,23 @@ class TestLock:
                 patch.object(time, "time", return_value=utime) as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()+1) as mock_get_age:
             assert lock._acquire_lock()
+            assert lock.held
             mock_renew.assert_called_once_with()
             mock_makedirs.assert_called_once_with(lock.lock_dir_path)
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
             mock_time.assert_called_once_with()
             mock_get_age.assert_not_called()
 
-    def test_private_acquire_lock_no_collision(self, lock):
+    def test_private_acquire_lock_no_collisions(self, lock):
         lock.held = False
         utime = 1
-        with patch.object(lock, "renew", return_value=False) as mock_renew, \
+        with patch.object(lock, "renew") as mock_renew, \
                 patch.object(os, "makedirs") as mock_makedirs, \
                 patch.object(os, "utime") as mock_utime, \
                 patch.object(time, "time", return_value=utime) as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()+1) as mock_get_age:
             assert lock._acquire_lock()
+            assert lock.held
             mock_renew.assert_not_called()
             mock_makedirs.assert_called_once_with(lock.lock_dir_path)
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
@@ -163,6 +166,7 @@ class TestLock:
                 patch.object(time, "time", return_value=utime) as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()+1) as mock_get_age:
             assert lock._acquire_lock(break_old_locks=False) is False
+            assert lock.held is False
             mock_renew.assert_not_called()
             mock_makedirs.assert_called_once_with(lock.lock_dir_path)
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
@@ -178,6 +182,7 @@ class TestLock:
                 patch.object(time, "time", return_value=utime) as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()+1) as mock_get_age:
             assert lock._acquire_lock()
+            assert lock.held
             mock_renew.assert_not_called()
             mock_makedirs.assert_called_once_with(lock.lock_dir_path)
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
@@ -193,6 +198,7 @@ class TestLock:
                 patch.object(time, "time", return_value=utime) as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()-1) as mock_get_age:
             assert lock._acquire_lock() is False
+            assert lock.held is False
             mock_renew.assert_not_called()
             mock_makedirs.assert_called_once_with(lock.lock_dir_path)
             mock_utime.assert_not_called()
@@ -219,6 +225,7 @@ class TestLock:
                 patch.object(os, "utime") as mock_utime, \
                 patch.object(time, "time") as mock_time:
             assert lock.renew() is False
+            assert lock.held is False
             mock_exists.assert_not_called()
             mock_get_age.assert_not_called()
             mock_utime.assert_not_called()
@@ -231,6 +238,7 @@ class TestLock:
                 patch.object(os, "utime") as mock_utime, \
                 patch.object(time, "time") as mock_time:
             assert lock.renew() is False
+            assert lock.held is False
             mock_exists.assert_called_once_with(lock.lock_dir_path)
             mock_get_age.assert_not_called()
             mock_utime.assert_not_called()
@@ -243,6 +251,7 @@ class TestLock:
                 patch.object(os, "utime") as mock_utime, \
                 patch.object(time, "time") as mock_time:
             assert lock.renew() is False
+            assert lock.held is False
             mock_exists.assert_called_once_with(lock.lock_dir_path)
             mock_get_age.assert_called_once_with()
             mock_utime.assert_not_called()
@@ -256,6 +265,7 @@ class TestLock:
                 patch.object(os, "utime", side_effect=OSError()) as mock_utime, \
                 patch.object(time, "time", return_value=utime) as mock_time:
             assert lock.renew() is False
+            assert lock.held is False
             mock_exists.assert_called_once_with(lock.lock_dir_path)
             mock_get_age.assert_called_once_with()
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
@@ -269,11 +279,58 @@ class TestLock:
                 patch.object(os, "utime") as mock_utime, \
                 patch.object(time, "time", return_value=utime) as mock_time:
             assert lock.renew()
+            assert lock.held
             mock_exists.assert_called_once_with(lock.lock_dir_path)
             mock_get_age.assert_called_once_with()
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
             mock_time.assert_called_once_with()
 
     # release
+    def test_release_not_have_lock(self, lock):
+        lock.held = False
+        with patch.object(shutil, "rmtree") as mock_rmtree:
+            lock.release()
+            mock_rmtree.assert_not_called()
+
+    def test_release_success(self, lock):
+        lock.held = True
+        with patch.object(shutil, "rmtree") as mock_rmtree:
+            lock.release()
+            assert lock.held is False
+            mock_rmtree.assert_called_once_with(lock.lock_dir_path)
+
+    def test_release_throws_error(self, lock):
+        lock.held = True
+        with pytest.raises(OSError), \
+                patch.object(shutil, "rmtree", side_effect=OSError()) as mock_rmtree:
+            lock.release()
+            mock_rmtree.assert_called_once_with(lock.lock_dir_path)
 
     # blocking_acquire
+    def test_blocking_acquire(self, lock):
+        with patch.object(time, "time", side_effect=(0, 1, 2)) as mock_time, \
+                patch.object(lock, "_acquire_lock", side_effect=(False, True)) as mock_acquire_lock, \
+                patch("spccore.internal.lock.doze") as mock_doze:
+            assert lock.blocking_acquire()
+            assert mock_time.call_count == 3
+            mock_acquire_lock.assert_has_calls([call(break_old_locks=True), call(break_old_locks=True)])
+            mock_doze.assert_called_once_with(CACHE_UNLOCK_WAIT_TIME)
+
+    def test_blocking_acquire_timeout(self, lock):
+        with pytest.raises(LockedException), \
+                patch.object(time, "time", side_effect=(0, 1, 2)) as mock_time, \
+                patch.object(lock, "_acquire_lock", side_effect=(False, True)) as mock_acquire_lock, \
+                patch("spccore.internal.lock.doze") as mock_doze:
+            lock.blocking_acquire(timeout=datetime.timedelta(seconds=2))
+            assert mock_time.call_count == 3
+            mock_acquire_lock.assert_has_calls([call(break_old_locks=True), call(break_old_locks=True)])
+            mock_doze.assert_called_once_with(CACHE_UNLOCK_WAIT_TIME)
+
+    def test_blocking_acquire_with_no_break_old_lock(self, lock):
+        with patch.object(time, "time", side_effect=(0, 1)) as mock_time, \
+                patch.object(lock, "_acquire_lock", return_value=True) as mock_acquire_lock, \
+                patch("spccore.internal.lock.doze") as mock_doze:
+            assert lock.blocking_acquire(break_old_locks=False)
+            assert mock_time.call_count == 2
+            mock_acquire_lock.assert_has_calls([call(break_old_locks=False)])
+            mock_doze.assert_not_called()
