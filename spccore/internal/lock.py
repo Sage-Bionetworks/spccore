@@ -14,10 +14,12 @@ only one file is created at a time. To release a lock, we attempt to remove the 
 Example::
     user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
     user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
-
+    
+    # in one thread
     with user1_lock:
         // do something
 
+    # in another thread
     with user2_lock:
         // do something else
 
@@ -89,48 +91,6 @@ class Lock(object):
                 if err.errno != errno.ENOENT:
                     raise
 
-    def _get_age(self) -> int:
-        """
-        Return the age of the lock
-
-        :raises OSError: when it fails to retrieve the lock's age
-        """
-        try:
-            return time.time() - os.path.getmtime(self.lock_dir_path)
-        except OSError as err:
-            if err.errno != errno.ENOENT and err.errno != errno.EACCES:
-                raise
-            return 0
-
-    def _acquire_lock(self, *, break_old_locks: bool = True) -> bool:
-        """
-        Attempt to acquire lock.
-
-        :param break_old_locks: set to False to ignore old locks. Default True.
-        :return: True on success; otherwise False.
-        :raises OSError: when it fails to acquire a lock
-        """
-        if self.held:
-            return self.renew()
-        try:
-            os.makedirs(self.lock_dir_path)
-            self.held = True
-            # Make sure the modification times are correct
-            # On some machines, the modification time could be seconds off
-            os.utime(self.lock_dir_path, (0, time.time()))
-        except OSError as err:
-            if err.errno != errno.EEXIST and err.errno != errno.EACCES:
-                raise
-            # already locked...
-            if break_old_locks and self._get_age() > self.max_age.total_seconds():
-                self.held = True
-                # Make sure the modification times are correct
-                # On some machines, the modification time could be seconds off
-                os.utime(self.lock_dir_path, (0, time.time()))
-            else:
-                self.held = False
-        return self.held
-
     def renew(self) -> bool:
         """
         Renew the holding lock by touching the lock file.
@@ -144,6 +104,49 @@ class Lock(object):
             except OSError as err:
                 self.held = False
         return False
+
+    def _get_age(self) -> int:
+        """
+        Return the age of the lock
+
+        :raises OSError: when it fails to retrieve the lock's age
+        """
+        try:
+            return time.time() - os.path.getmtime(self.lock_dir_path)
+        except OSError as err:
+            print(err.errno)
+            if err.errno != errno.ENOENT and err.errno != errno.EACCES:
+                raise
+            return 0
+
+    def _acquire_lock(self, *, break_old_locks: bool = True) -> bool:
+        """
+        Attempt to acquire lock.
+
+        :param break_old_locks: set to False to ignore old locks. Default True.
+        :return: True on success; otherwise False.
+        :raises OSError: when it fails to acquire a lock
+        """
+        if self.held and self.renew():
+            return True
+        try:
+            os.makedirs(self.lock_dir_path)
+            self.held = True
+            # Make sure the modification times are correct
+            # On some machines, the modification time could be seconds off
+            os.utime(self.lock_dir_path, (0, time.time()))
+        except OSError as err:
+            if err.errno != errno.EEXIST and err.errno != errno.EACCES:
+                raise
+            # already locked by another thread
+            if break_old_locks and self._get_age() > self.max_age.total_seconds():
+                self.held = True
+                # Make sure the modification times are correct
+                # On some machines, the modification time could be seconds off
+                os.utime(self.lock_dir_path, (0, time.time()))
+            else:
+                self.held = False
+        return self.held
 
     # Make the lock object a Context Manager
     def __enter__(self):

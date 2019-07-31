@@ -101,4 +101,3 @@ def test_multi_threaded():
 
     for key in counts:
         assert counts[key] == set(range(NUMBER_OF_TIMES_PER_THREAD))
-
