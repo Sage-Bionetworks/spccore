@@ -108,7 +108,8 @@ class Cache:
                 for path in cache_map:
                     if delete_file is True and os.path.exists(path):
                         os.remove(path)
-                        lock.renew()
+                        if not lock.renew():
+                            raise LockException("Failed to renew lock")
                     removed.append(path)
                 cache_map = {}
             elif file_path in cache_map:
@@ -159,14 +160,16 @@ def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bo
             if before_date > from_iso_to_datetime(cache_time):
                 if not dry_run and os.path.exists(file_path):
                     os.remove(file_path)
-                    lock.renew()
+                    if not lock.renew():
+                        raise LockException("Failed to renew lock")
                 removed.append(file_path)
             else:
                 remain_map[file_path] = cache_time
         if not dry_run:
             if not remain_map:
                 shutil.rmtree(cache_dir)
-                lock.renew()
+                if not lock.renew():
+                    raise LockException("Failed to renew lock")
             else:
                 _write_cache_map(remain_map, cache_dir)
     return removed

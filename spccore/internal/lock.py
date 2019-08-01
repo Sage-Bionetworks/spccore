@@ -33,7 +33,7 @@ CACHE_UNLOCK_WAIT_TIME = 0.5
 LOCK_FILE_SUFFIX = 'lock'
 
 
-class LockedException(Exception):
+class LockException(Exception):
     pass
 
 
@@ -74,7 +74,7 @@ class Lock(object):
                 return True
             else:
                 doze(CACHE_UNLOCK_WAIT_TIME)
-        raise LockedException("Could not obtain a lock on the file cache within timeout: {timeout}."
+        raise LockException("Could not obtain a lock on the file cache within timeout: {timeout}."
                               " Please try again later.".format(**{'timeout': str(timeout)}))
 
     def release(self) -> None:
