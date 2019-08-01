@@ -38,7 +38,7 @@ def test_lock_timeout():
     user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=1))
 
     with user1_lock:
-        assert user1_lock.held
+        assert user1_lock._has_lock()
         assert user1_lock._get_age() < 1.0
         assert user2_lock._acquire_lock(break_old_locks=True) is False
         time.sleep(1.1)

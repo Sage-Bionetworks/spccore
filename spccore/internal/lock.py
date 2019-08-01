@@ -29,7 +29,7 @@ Therefore, {do something} and {do something else} will be executed in sequential
 
 LOCK_DEFAULT_MAX_AGE = datetime.timedelta(seconds=10)
 DEFAULT_BLOCKING_TIMEOUT = datetime.timedelta(seconds=70)
-CACHE_UNLOCK_WAIT_TIME = 0.5
+CACHE_UNLOCK_WAIT_TIME_SEC = 0.5
 LOCK_FILE_SUFFIX = 'lock'
 
 
@@ -40,6 +40,10 @@ class LockException(Exception):
 class Lock(object):
     """
     Implements a lock by making a directory named <lock_name>.lock
+
+    Notes: we found that the OS operation for checking the file exists and creating a file is not guarantee the
+    transactional boundary across platform. However, checking for directory name exists and creating it has
+    transactional boundary across platform. Therefore, we use directory instead of file.
     """
 
     def __init__(self,
@@ -49,8 +53,14 @@ class Lock(object):
                  max_age: datetime.timedelta = LOCK_DEFAULT_MAX_AGE,
                  default_blocking_timeout: datetime.timedelta = DEFAULT_BLOCKING_TIMEOUT
                  ) -> None:
+        """
+        :param name: the name of the lock. It will be used to construct the lock directory name.
+        :param current_working_directory: the parent directory of the lock.
+        :param max_age: the max time one thread can hold a lock.
+        :param default_blocking_timeout: the time one thread will wait and try to acquire the lock.
+        """
         self.name = name
-        self.held = False
+        self.last_updated_time = 0
         self.current_working_directory = current_working_directory if current_working_directory else os.getcwd()
         self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, LOCK_FILE_SUFFIX]))
         self.max_age = max_age
@@ -73,7 +83,7 @@ class Lock(object):
             if self._acquire_lock(break_old_locks=break_old_locks):
                 return True
             else:
-                doze(CACHE_UNLOCK_WAIT_TIME)
+                doze(CACHE_UNLOCK_WAIT_TIME_SEC)
         raise LockException("Could not obtain a lock on the file cache within timeout: {timeout}."
                               " Please try again later.".format(**{'timeout': str(timeout)}))
 
@@ -83,10 +93,9 @@ class Lock(object):
 
         :raises OSError: when it fails to release a lock
         """
-        if self.held:
+        if self._has_lock():
             try:
                 shutil.rmtree(self.lock_dir_path)
-                self.held = False
             except OSError as err:
                 if err.errno != errno.ENOENT:
                     raise
@@ -97,14 +106,23 @@ class Lock(object):
 
         :return: True for success; otherwise False.
         """
-        if self.held and os.path.exists(self.lock_dir_path) and self._get_age() < self.max_age.total_seconds():
+        if self._has_lock():
             try:
-                os.utime(self.lock_dir_path, (0, time.time()))
+                self.last_updated_time = time.time()
+                os.utime(self.lock_dir_path, (0, self.last_updated_time))
                 return True
-            except OSError as err:
-                self.held = False
-        self.held = False
-        return self.held
+            except OSError:
+                return False
+        return False
+
+    def _has_lock(self) -> bool:
+        """
+        Return True if this thread has the lock
+        """
+        try:
+            return os.path.getmtime(self.lock_dir_path) == self.last_updated_time
+        except OSError:
+            return False
 
     def _get_age(self) -> int:
         """
@@ -115,7 +133,6 @@ class Lock(object):
         try:
             return time.time() - os.path.getmtime(self.lock_dir_path)
         except OSError as err:
-            print(err.errno)
             if err.errno != errno.ENOENT and err.errno != errno.EACCES:
                 raise
             return 0
@@ -128,11 +145,10 @@ class Lock(object):
         :return: True on success; otherwise False.
         :raises OSError: when it fails to acquire a lock
         """
-        if self.held and self.renew():
+        if self.renew():
             return True
         try:
             os.makedirs(self.lock_dir_path)
-            self.held = True
             # Make sure the modification times are correct
             # On some machines, the modification time could be seconds off
             os.utime(self.lock_dir_path, (0, time.time()))
@@ -141,13 +157,13 @@ class Lock(object):
                 raise
             # already locked by another thread
             if break_old_locks and self._get_age() > self.max_age.total_seconds():
-                self.held = True
+                self.last_updated_time = time.time()
                 # Make sure the modification times are correct
                 # On some machines, the modification time could be seconds off
-                os.utime(self.lock_dir_path, (0, time.time()))
+                os.utime(self.lock_dir_path, (0, self.last_updated_time))
             else:
-                self.held = False
-        return self.held
+                return False
+        return self._has_lock()
 
     # Make the lock object a Context Manager
     def __enter__(self):
