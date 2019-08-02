@@ -5,11 +5,13 @@ from spccore.internal.lock import *
 
 
 def test_private_acquire():
-    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
-    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
+    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
+    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
+    assert user1_lock._has_lock() is False
+    assert user2_lock._has_lock() is False
 
     assert user1_lock._acquire_lock()
-    assert user1_lock._get_age() < 5
+    assert user1_lock._get_age() < 2
     assert user2_lock._acquire_lock() is False
 
     user1_lock.release()
@@ -21,16 +23,16 @@ def test_private_acquire():
 
 
 def test_context_manager():
-    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
-    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
+    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
+    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
 
     with user1_lock:
-        assert user1_lock._get_age() < 5
+        assert user1_lock._has_lock()
+        assert user1_lock._get_age() < 2
         assert user2_lock._acquire_lock() is False
 
-    with user2_lock:
-        assert user2_lock._acquire_lock()
-        assert user1_lock._acquire_lock() is False
+    assert user1_lock._has_lock() is False
+    assert user2_lock._has_lock() is False
 
 
 def test_lock_timeout():
@@ -41,24 +43,19 @@ def test_lock_timeout():
         assert user1_lock._has_lock()
         assert user1_lock._get_age() < 1.0
         assert user2_lock._acquire_lock(break_old_locks=True) is False
-        time.sleep(1.1)
+        time.sleep(2)
         assert user1_lock._get_age() > 1.0
         assert user2_lock._acquire_lock(break_old_locks=True)
 
 
 def test_renew():
-    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=1))
-    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=1))
+    user_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
 
-    with user1_lock:
+    with user_lock:
         time.sleep(1.1)
-        assert user1_lock._get_age() > 1.0
-        user1_lock.renew()
-        assert user1_lock._get_age() < 1.0
-        assert user2_lock._acquire_lock(break_old_locks=True) is False
-        time.sleep(1.1)
-        assert user1_lock._get_age() > 1.0
-        assert user2_lock._acquire_lock(break_old_locks=True)
+        assert user_lock._get_age() > 1.0
+        user_lock.renew()
+        assert user_lock._get_age() < 1.0
 
 
 def test_renew_with_expired():
@@ -75,11 +72,11 @@ NUMBER_OF_TIMES_PER_THREAD = 3
 
 
 def run_with_a_locked_resource(name, event_log):
-    lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
+    lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
     for i in range(NUMBER_OF_TIMES_PER_THREAD):
         with lock:
             event_log.append((name, i))
-        time.sleep(random.betavariate(2, 5))
+        time.sleep(random.betavariate(1, 2))
 
 
 def test_multi_threaded():

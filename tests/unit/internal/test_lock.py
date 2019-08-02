@@ -49,7 +49,7 @@ class TestLock:
                 patch.object(os.path, "join", return_value=lock_dir_path) as mock_join:
             lock = Lock(name)
             assert lock.name == name
-            assert lock.last_updated_time == 0
+            assert lock.last_updated_time is None
             assert lock.current_working_directory == cwd
             assert lock.lock_dir_path == lock_dir_path
             assert lock.max_age == LOCK_DEFAULT_MAX_AGE
@@ -71,16 +71,19 @@ class TestLock:
 
     # _has_lock
     def test_private_has_lock(self, lock):
-        with patch.object(os.path, "getmtime", return_value=lock.last_updated_time) as mock_get_mtime:
+        lock.last_updated_time = from_epoch_time_to_iso(0)
+        with patch.object(os.path, "getmtime", return_value=0) as mock_get_mtime:
             assert lock._has_lock()
             mock_get_mtime.assert_called_once_with(lock.lock_dir_path)
 
     def test_private_has_lock_out_of_date(self, lock):
-        with patch.object(os.path, "getmtime", return_value=lock.last_updated_time+1) as mock_get_mtime:
+        lock.last_updated_time = from_epoch_time_to_iso(0)
+        with patch.object(os.path, "getmtime", return_value=1) as mock_get_mtime:
             assert lock._has_lock() is False
             mock_get_mtime.assert_called_once_with(lock.lock_dir_path)
 
     def test_private_has_lock_fails(self, lock, error):
+        lock.last_updated_time = from_epoch_time_to_iso(0)
         with patch.object(os.path, "getmtime", side_effect=error) as mock_get_mtime:
             assert lock._has_lock() is False
             mock_get_mtime.assert_called_once_with(lock.lock_dir_path)
@@ -204,32 +207,39 @@ class TestLock:
     # renew
     def test_renew_not_already_have_lock(self, lock):
         with patch.object(lock, "_has_lock", return_value=False) as mock_has_lock, \
+                patch.object(lock, "_get_age", return_value=0) as mock_get_age, \
                 patch.object(os, "utime") as mock_utime, \
                 patch.object(time, "time") as mock_time:
             assert lock.renew() is False
             mock_has_lock.assert_called_once_with()
             mock_utime.assert_not_called()
             mock_time.assert_not_called()
+            mock_get_age.assert_not_called()
 
     def test_renew_lock_fails(self, lock):
         utime = 1
         with patch.object(lock, "_has_lock", return_value=True) as mock_has_lock, \
                 patch.object(os, "utime", side_effect=OSError()) as mock_utime, \
+                patch.object(lock, "_get_age", return_value=0) as mock_get_age, \
                 patch.object(time, "time", return_value=utime) as mock_time:
             assert lock.renew() is False
             mock_has_lock.assert_called_once_with()
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
             mock_time.assert_called_once_with()
+            mock_get_age.assert_called_once_with()
 
     def test_renew_lock_success(self, lock):
         utime = 1
         with patch.object(lock, "_has_lock", return_value=True) as mock_has_lock, \
                 patch.object(os, "utime") as mock_utime, \
+                patch.object(lock, "_get_age", return_value=0) as mock_get_age, \
                 patch.object(time, "time", return_value=utime) as mock_time:
             assert lock.renew()
             mock_has_lock.assert_called_once_with()
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
             mock_time.assert_called_once_with()
+            mock_get_age.assert_called_once_with()
+
 
     # release
     def test_release_not_have_lock(self, lock):

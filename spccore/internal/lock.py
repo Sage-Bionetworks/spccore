@@ -3,6 +3,7 @@ import os
 import shutil
 import datetime
 
+from spccore.internal.timeutils import *
 from spccore.internal.dozer import *
 
 """
@@ -60,7 +61,7 @@ class Lock(object):
         :param default_blocking_timeout: the time one thread will wait and try to acquire the lock.
         """
         self.name = name
-        self.last_updated_time = 0
+        self.last_updated_time = None
         self.current_working_directory = current_working_directory if current_working_directory else os.getcwd()
         self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, LOCK_FILE_SUFFIX]))
         self.max_age = max_age
@@ -106,10 +107,11 @@ class Lock(object):
 
         :return: True for success; otherwise False.
         """
-        if self._has_lock():
+        if self._has_lock() and self._get_age() < self.max_age.total_seconds():
             try:
-                self.last_updated_time = time.time()
-                os.utime(self.lock_dir_path, (0, self.last_updated_time))
+                update_time = time.time()
+                os.utime(self.lock_dir_path, (0, update_time))
+                self.last_updated_time = from_epoch_time_to_iso(update_time)
                 return True
             except OSError:
                 return False
@@ -119,8 +121,11 @@ class Lock(object):
         """
         Return True if this thread has the lock
         """
+        if self.last_updated_time is None:
+            return False
         try:
-            return os.path.getmtime(self.lock_dir_path) == self.last_updated_time
+            lock_time = from_epoch_time_to_iso(os.path.getmtime(self.lock_dir_path))
+            return lock_time == self.last_updated_time
         except OSError:
             return False
 
@@ -135,7 +140,7 @@ class Lock(object):
         except OSError as err:
             if err.errno != errno.ENOENT and err.errno != errno.EACCES:
                 raise
-            return 0
+        return 0
 
     def _acquire_lock(self, *, break_old_locks: bool = True) -> bool:
         """
@@ -151,16 +156,19 @@ class Lock(object):
             os.makedirs(self.lock_dir_path)
             # Make sure the modification times are correct
             # On some machines, the modification time could be seconds off
-            os.utime(self.lock_dir_path, (0, time.time()))
+            update_time = time.time()
+            os.utime(self.lock_dir_path, (0, update_time))
+            self.last_updated_time = from_epoch_time_to_iso(update_time)
         except OSError as err:
             if err.errno != errno.EEXIST and err.errno != errno.EACCES:
                 raise
             # already locked by another thread
             if break_old_locks and self._get_age() > self.max_age.total_seconds():
-                self.last_updated_time = time.time()
                 # Make sure the modification times are correct
                 # On some machines, the modification time could be seconds off
-                os.utime(self.lock_dir_path, (0, self.last_updated_time))
+                update_time = time.time()
+                os.utime(self.lock_dir_path, (0, update_time))
+                self.last_updated_time = from_epoch_time_to_iso(update_time)
             else:
                 return False
         return self._has_lock()
