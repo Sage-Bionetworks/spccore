@@ -240,7 +240,6 @@ class TestLock:
             mock_time.assert_called_once_with()
             mock_get_age.assert_called_once_with()
 
-
     # release
     def test_release_not_have_lock(self, lock):
         with patch.object(lock, "_has_lock", return_value=False) as mock_has_lock, \

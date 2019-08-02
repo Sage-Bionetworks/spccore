@@ -15,7 +15,7 @@ only one file is created at a time. To release a lock, we attempt to remove the 
 Example::
     user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
     user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
-    
+
     # in one thread
     with user1_lock:
         // do something
