@@ -1,6 +1,3 @@
-import random
-import threading
-
 from spccore.internal.lock import *
 
 
@@ -67,3 +64,13 @@ def test_renew_with_expired():
         assert user_lock._get_age() > 1.0
         # expired but has not released
         assert user_lock.renew() is False
+
+
+def test_release():
+    user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
+    user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
+    assert user1_lock._acquire_lock()
+    user1_lock.release()
+    assert user1_lock._has_lock() is False
+    assert user2_lock._acquire_lock()
+    assert user1_lock._acquire_lock() is False

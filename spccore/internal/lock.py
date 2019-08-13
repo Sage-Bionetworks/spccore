@@ -95,6 +95,7 @@ class Lock(object):
         :raises OSError: when it fails to release a lock
         """
         if self._has_lock():
+            self.last_updated_time = None
             try:
                 shutil.rmtree(self.lock_dir_path)
             except OSError as err:
