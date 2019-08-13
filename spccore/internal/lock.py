@@ -42,9 +42,9 @@ class Lock(object):
     """
     Implements a lock by making a directory named <lock_name>.lock
 
-    Notes: we found that the OS operation for checking the file exists and creating a file is not guarantee the
-    transactional boundary across platform. However, checking for directory name exists and creating it has
-    transactional boundary across platform. Therefore, we use directory instead of file.
+    Notes: There is no cross-platform, atomic OS operation that both checks whether a file exists and creates the file.
+    However, the directory creation OS operation is atomic across platforms. Therefore we use a directory rather than
+    a file as the semaphore to lock file access.
     """
 
     def __init__(self,
