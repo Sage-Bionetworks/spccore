@@ -3,6 +3,7 @@ import os
 import shutil
 import datetime
 
+from spccore.internal.timeutils import *
 from spccore.internal.dozer import *
 
 """
@@ -15,9 +16,11 @@ Example::
     user1_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
     user2_lock = Lock("foo", max_age=datetime.timedelta(seconds=5))
 
+    # in one thread
     with user1_lock:
         // do something
 
+    # in another thread
     with user2_lock:
         // do something else
 
@@ -27,18 +30,22 @@ Therefore, {do something} and {do something else} will be executed in sequential
 
 LOCK_DEFAULT_MAX_AGE = datetime.timedelta(seconds=10)
 DEFAULT_BLOCKING_TIMEOUT = datetime.timedelta(seconds=70)
-CACHE_UNLOCK_WAIT_TIME = 0.5
+CACHE_UNLOCK_WAIT_TIME_SEC = 0.5
+LOCK_FILE_SUFFIX = 'lock'
 
 
-class LockedException(Exception):
+class LockException(Exception):
     pass
 
 
 class Lock(object):
     """
     Implements a lock by making a directory named <lock_name>.lock
+
+    Notes: There is no cross-platform, atomic OS operation that both checks whether a file exists and creates the file.
+    However, the directory creation OS operation is atomic across platforms. Therefore we use a directory rather than
+    a file as the semaphore to lock file access.
     """
-    SUFFIX = 'lock'
 
     def __init__(self,
                  name: str,
@@ -47,10 +54,16 @@ class Lock(object):
                  max_age: datetime.timedelta = LOCK_DEFAULT_MAX_AGE,
                  default_blocking_timeout: datetime.timedelta = DEFAULT_BLOCKING_TIMEOUT
                  ) -> None:
+        """
+        :param name: the name of the lock. It will be used to construct the lock directory name.
+        :param current_working_directory: the parent directory of the lock.
+        :param max_age: the max time one thread can hold a lock.
+        :param default_blocking_timeout: the time one thread will wait and try to acquire the lock.
+        """
         self.name = name
-        self.held = False
+        self.last_updated_time = None
         self.current_working_directory = current_working_directory if current_working_directory else os.getcwd()
-        self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, Lock.SUFFIX]))
+        self.lock_dir_path = os.path.join(self.current_working_directory, ".".join([name, LOCK_FILE_SUFFIX]))
         self.max_age = max_age
         self.default_blocking_timeout = default_blocking_timeout
 
@@ -71,8 +84,8 @@ class Lock(object):
             if self._acquire_lock(break_old_locks=break_old_locks):
                 return True
             else:
-                doze(CACHE_UNLOCK_WAIT_TIME)
-        raise LockedException("Could not obtain a lock on the file cache within timeout: {timeout}."
+                doze(CACHE_UNLOCK_WAIT_TIME_SEC)
+        raise LockException("Could not obtain a lock on the file cache within timeout: {timeout}."
                               " Please try again later.".format(**{'timeout': str(timeout)}))
 
     def release(self) -> None:
@@ -81,13 +94,41 @@ class Lock(object):
 
         :raises OSError: when it fails to release a lock
         """
-        if self.held:
+        if self._has_lock():
+            self.last_updated_time = None
             try:
                 shutil.rmtree(self.lock_dir_path)
-                self.held = False
             except OSError as err:
                 if err.errno != errno.ENOENT:
                     raise
+
+    def renew(self) -> bool:
+        """
+        Renew the holding lock by touching the lock file.
+
+        :return: True for success; otherwise False.
+        """
+        if self._has_lock() and self._get_age() < self.max_age.total_seconds():
+            try:
+                update_time = time.time()
+                os.utime(self.lock_dir_path, (0, update_time))
+                self.last_updated_time = from_epoch_time_to_iso(update_time)
+                return True
+            except OSError:
+                return False
+        return False
+
+    def _has_lock(self) -> bool:
+        """
+        Return True if this thread has the lock
+        """
+        if self.last_updated_time is None:
+            return False
+        try:
+            lock_time = from_epoch_time_to_iso(os.path.getmtime(self.lock_dir_path))
+            return lock_time == self.last_updated_time
+        except OSError:
+            return False
 
     def _get_age(self) -> int:
         """
@@ -100,7 +141,7 @@ class Lock(object):
         except OSError as err:
             if err.errno != errno.ENOENT and err.errno != errno.EACCES:
                 raise
-            return 0
+        return 0
 
     def _acquire_lock(self, *, break_old_locks: bool = True) -> bool:
         """
@@ -110,30 +151,33 @@ class Lock(object):
         :return: True on success; otherwise False.
         :raises OSError: when it fails to acquire a lock
         """
-        if self.held:
+        if self.renew():
             return True
         try:
             os.makedirs(self.lock_dir_path)
-            self.held = True
             # Make sure the modification times are correct
             # On some machines, the modification time could be seconds off
-            os.utime(self.lock_dir_path, (0, time.time()))
+            update_time = time.time()
+            os.utime(self.lock_dir_path, (0, update_time))
+            self.last_updated_time = from_epoch_time_to_iso(update_time)
         except OSError as err:
             if err.errno != errno.EEXIST and err.errno != errno.EACCES:
                 raise
-            # already locked...
+            # already locked by another thread
             if break_old_locks and self._get_age() > self.max_age.total_seconds():
-                self.held = True
                 # Make sure the modification times are correct
                 # On some machines, the modification time could be seconds off
-                os.utime(self.lock_dir_path, (0, time.time()))
+                update_time = time.time()
+                os.utime(self.lock_dir_path, (0, update_time))
+                self.last_updated_time = from_epoch_time_to_iso(update_time)
             else:
-                self.held = False
-        return self.held
+                return False
+        return self._has_lock()
 
     # Make the lock object a Context Manager
-    def __enter__(self) -> None:
+    def __enter__(self):
         self.blocking_acquire()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.release()

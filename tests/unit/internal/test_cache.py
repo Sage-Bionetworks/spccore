@@ -28,6 +28,7 @@ def test_private_purge_cache_dir(cache_dir, file_path):
         return values[path]
 
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch.object(Lock, "renew", return_value=True) as mock_renew, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
@@ -35,6 +36,7 @@ def test_private_purge_cache_dir(cache_dir, file_path):
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
         assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, False))
         mock_lock.assert_called_once_with()
+        mock_renew.assert_called_once_with()
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_exists.assert_has_calls([call("older"), call("not_exist")])
         mock_remove.assert_called_once_with("older")
@@ -53,6 +55,7 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
     removed = {"older", "not_exist"}
 
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch.object(Lock, "renew", return_value=True) as mock_renew, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch.object(os.path, "exists") as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
@@ -60,6 +63,7 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
         assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, True))
         mock_lock.assert_called_once_with()
+        mock_renew.assert_not_called()
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_exists.assert_not_called()
         mock_remove.assert_not_called()
@@ -80,6 +84,7 @@ def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
         return values[path]
 
     with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch.object(Lock, "renew", return_value=True) as mock_renew, \
             patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
             patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
             patch.object(os, "remove") as mock_remove, \
@@ -87,6 +92,37 @@ def test_private_purge_cache_dir_remove_all(cache_dir, file_path):
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
         assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, False))
         mock_lock.assert_called_once_with()
+        assert mock_renew.call_count == 2
+        mock_get_cache_map.assert_called_once_with(cache_dir)
+        mock_exists.assert_has_calls([call(file_path), call("not_exist")])
+        mock_remove.assert_called_once_with(file_path)
+        mock_remove_tree.assert_called_once_with(cache_dir)
+        mock_write_cache_map.assert_not_called()
+
+
+def test_private_purge_cache_dir_failed_to_renew_lock(cache_dir, file_path):
+    cutoff_date = datetime.datetime(2019, 7, 1)
+    cache_map = collections.OrderedDict([
+        (file_path, '2019-06-30T23:59:59.999Z'),
+        ("not_exist", '2019-01-30T23:59:59.999Z')
+    ])
+    removed = {file_path, "not_exist"}
+
+    def side_effect(path):
+        values = {file_path: True, "not_exist": False}
+        return values[path]
+
+    with pytest.raises(LockException), \
+            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+            patch.object(Lock, "renew", return_value=False) as mock_renew, \
+            patch("spccore.internal.cache._get_cache_map", return_value=cache_map) as mock_get_cache_map, \
+            patch.object(os.path, "exists", side_effect=side_effect) as mock_exists, \
+            patch.object(os, "remove") as mock_remove, \
+            patch.object(shutil, "rmtree") as mock_remove_tree, \
+            patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+        _purge_cache_dir(cutoff_date, cache_dir, False)
+        mock_lock.assert_called_once_with()
+        assert mock_renew.call_count == 2
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_exists.assert_has_calls([call(file_path), call("not_exist")])
         mock_remove.assert_called_once_with(file_path)
@@ -363,6 +399,7 @@ class TestCache:
                 patch.object(os.path, "exists", return_value=True) as mock_exists, \
                 patch.object(os, "remove") as mock_remove, \
                 patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(Lock, "renew", return_value=True) as mock_renew, \
                 patch("spccore.internal.cache._get_cache_map", return_value=to_be_removed) as mock_get_cache_map, \
                 patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
             assert [file_path] == cache.remove(file_handle_id)
@@ -370,6 +407,26 @@ class TestCache:
             mock_exists.assert_not_called()
             mock_remove.assert_not_called()
             mock_lock.assert_called_once_with()
+            mock_renew.assert_not_called()
+            mock_get_cache_map.assert_called_once_with(cache_dir)
+            mock_write_cache_map.assert_called_once_with({}, cache_dir)
+
+    def test_remove_all_with_failed_to_renew_lock(self, cache, file_handle_id, cache_dir, file_path):
+        to_be_removed = {file_path: '2019-07-01T00:03:01.000Z'}
+        with pytest.raises(LockException), \
+                patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
+                patch.object(os.path, "exists", return_value=True) as mock_exists, \
+                patch.object(os, "remove") as mock_remove, \
+                patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(Lock, "renew", return_value=False) as mock_renew, \
+                patch("spccore.internal.cache._get_cache_map", return_value=to_be_removed) as mock_get_cache_map, \
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+            cache.remove(file_handle_id, delete_file=True)
+            mock_get_cache_dir.assert_called_once_with(file_handle_id)
+            mock_exists.assert_not_called()
+            mock_remove.assert_not_called()
+            mock_lock.assert_called_once_with()
+            mock_renew.assert_not_called()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
@@ -379,6 +436,7 @@ class TestCache:
                 patch.object(os.path, "exists", return_value=True) as mock_exists, \
                 patch.object(os, "remove") as mock_remove, \
                 patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(Lock, "renew", return_value=True) as mock_renew, \
                 patch("spccore.internal.cache._get_cache_map", return_value=to_be_removed) as mock_get_cache_map, \
                 patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
             assert [file_path] == cache.remove(file_handle_id, delete_file=True)
@@ -386,15 +444,17 @@ class TestCache:
             mock_exists.assert_called_once_with(file_path)
             mock_remove.assert_called_once_with(file_path)
             mock_lock.assert_called_once_with()
+            mock_renew.assert_called_once_with()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
-    def test_remove_single_path_with_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
+    def test_remove_single_path_delete_actual_files(self, cache, file_handle_id, cache_dir, file_path):
         map_content = {file_path: '2019-07-01T00:03:01.000Z'}
         with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
                 patch.object(os.path, "exists", return_value=True) as mock_exists, \
                 patch.object(os, "remove") as mock_remove, \
                 patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(Lock, "renew", return_value=True) as mock_renew, \
                 patch("spccore.internal.cache._get_cache_map", return_value=map_content) as mock_get_cache_map, \
                 patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
             assert [file_path] == cache.remove(file_handle_id, file_path=file_path, delete_file=True)
@@ -402,6 +462,7 @@ class TestCache:
             mock_exists.assert_called_once_with(file_path)
             mock_remove.assert_called_once_with(file_path)
             mock_lock.assert_called_once_with()
+            mock_renew.assert_not_called()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
@@ -410,6 +471,7 @@ class TestCache:
                 patch.object(os.path, "exists", return_value=True) as mock_exists, \
                 patch.object(os, "remove") as mock_remove, \
                 patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(Lock, "renew", return_value=True) as mock_renew, \
                 patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
                 patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
             assert [file_path] == cache.remove(file_handle_id, file_path=file_path, delete_file=True)
@@ -417,6 +479,7 @@ class TestCache:
             mock_exists.assert_called_once_with(file_path)
             mock_remove.assert_called_once_with(file_path)
             mock_lock.assert_called_once_with()
+            mock_renew.assert_not_called()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
