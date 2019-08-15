@@ -45,6 +45,7 @@ def test_lock_timeout():
         assert user2_lock._acquire_lock(break_old_locks=True)
 
     assert user2_lock._has_lock()
+    user2_lock.release()
 
 
 def test_renew():
@@ -74,3 +75,5 @@ def test_release():
     assert user1_lock._has_lock() is False
     assert user2_lock._acquire_lock()
     assert user1_lock._acquire_lock() is False
+
+    user2_lock.release()
