@@ -1,14 +1,11 @@
 import base64
-import hashlib
 import hmac
-import json
 import time
-import typing
 import urllib.parse as urllib_parse
 from .constants import *
 from .download import *
 from .exceptions import *
-from .utils import *
+from .multipart_upload import *
 
 
 class SynapseBaseClient:
@@ -99,8 +96,8 @@ class SynapseBaseClient:
 
     def put(self,
             request_path: str,
-            request_body: dict,
             *,
+            request_body: dict = None,
             request_parameters: dict = None,
             endpoint: str = None,
             headers: dict = None
@@ -129,8 +126,8 @@ class SynapseBaseClient:
 
     def post(self,
              request_path: str,
-             request_body: dict,
              *,
+             request_body: dict = None,
              request_parameters: dict = None,
              endpoint: str = None,
              headers: dict = None
