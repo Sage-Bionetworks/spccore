@@ -1,11 +1,14 @@
 import base64
+import hashlib
 import hmac
+import json
 import time
+import typing
 import urllib.parse as urllib_parse
 from .constants import *
 from .download import *
 from .exceptions import *
-from .multipart_upload import *
+from .utils import *
 
 
 class SynapseBaseClient:
