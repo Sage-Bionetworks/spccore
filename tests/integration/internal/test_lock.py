@@ -49,12 +49,11 @@ def test_lock_timeout():
 
 
 def test_renew():
-    user_lock = Lock("foo", max_age=datetime.timedelta(seconds=2))
-
+    user_lock = Lock(".foo", max_age=datetime.timedelta(seconds=2))
     with user_lock:
         time.sleep(1.1)
         assert user_lock._get_age() > 1.0
-        user_lock.renew()
+        assert user_lock.renew()
         assert user_lock._get_age() < 1.0
 
 
@@ -77,3 +76,10 @@ def test_release():
     assert user1_lock._acquire_lock() is False
 
     user2_lock.release()
+
+
+def test_nested_context_managers():
+    with Lock(".foo", max_age=datetime.timedelta(seconds=2)) as user1_lock:
+        with Lock(".foo", max_age=datetime.timedelta(seconds=2)) as user2_lock:
+            assert user2_lock._has_lock()
+        assert user1_lock._has_lock() is False

@@ -203,6 +203,12 @@ class SynapseBaseClient:
         :return: the File Handle created in Synapse
         :raises SynapseClientError: please see each error message
         """
+        validate_type(str, path, "path")
+        validate_type(str, content_type, "content_type")
+
+
+
+
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],

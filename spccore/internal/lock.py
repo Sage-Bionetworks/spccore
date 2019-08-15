@@ -1,7 +1,6 @@
 import errno
 import os
 import shutil
-import datetime
 
 from spccore.internal.timeutils import *
 from spccore.internal.dozer import *
@@ -95,7 +94,6 @@ class Lock(object):
         :raises OSError: when it fails to release a lock
         """
         if self._has_lock():
-            self.last_updated_time = None
             try:
                 shutil.rmtree(self.lock_dir_path)
             except OSError as err:
@@ -110,9 +108,7 @@ class Lock(object):
         """
         if self._has_lock() and self._get_age() < self.max_age.total_seconds():
             try:
-                update_time = time.time()
-                os.utime(self.lock_dir_path, (0, update_time))
-                self.last_updated_time = from_epoch_time_to_iso(update_time)
+                self._update_lock_time()
                 return True
             except OSError:
                 return False
@@ -155,24 +151,28 @@ class Lock(object):
             return True
         try:
             os.makedirs(self.lock_dir_path)
-            # Make sure the modification times are correct
-            # On some machines, the modification time could be seconds off
-            update_time = time.time()
-            os.utime(self.lock_dir_path, (0, update_time))
-            self.last_updated_time = from_epoch_time_to_iso(update_time)
+            self._update_lock_time()
         except OSError as err:
             if err.errno != errno.EEXIST and err.errno != errno.EACCES:
                 raise
             # already locked by another thread
             if break_old_locks and self._get_age() > self.max_age.total_seconds():
-                # Make sure the modification times are correct
-                # On some machines, the modification time could be seconds off
-                update_time = time.time()
-                os.utime(self.lock_dir_path, (0, update_time))
-                self.last_updated_time = from_epoch_time_to_iso(update_time)
+                self._update_lock_time()
             else:
                 return False
         return self._has_lock()
+
+    def _update_lock_time(self):
+        """
+        Update the lock time of the given lock
+
+        :param lock: the Lock object to update
+        """
+        # sleep for 1 millisecond to make sure that we have a different timestamp
+        time.sleep(0.001)
+        update_time = time.time()
+        os.utime(self.lock_dir_path, (0, update_time))
+        self.last_updated_time = from_epoch_time_to_iso(update_time)
 
     # Make the lock object a Context Manager
     def __enter__(self):

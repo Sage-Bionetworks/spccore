@@ -39,8 +39,20 @@ def test_after_modified(cache, file_handle_id, file_path):
     exist_file_paths = cache.get_all_unmodified_cached_file_paths(file_handle_id)
     assert normalize_path(file_path) in exist_file_paths
 
+    time.sleep(1)
     with open(file_path, 'w') as f:
         f.write("some other text")
 
+    time.sleep(1)
     exist_file_paths = cache.get_all_unmodified_cached_file_paths(file_handle_id)
     assert len(exist_file_paths) == 0
+
+
+def test_purge(cache, file_handle_id, file_path):
+    cache.register(file_handle_id, file_path)
+    exist_file_paths = cache.get_all_unmodified_cached_file_paths(file_handle_id)
+    assert normalize_path(file_path) in exist_file_paths
+
+    cache.purge(from_epoch_time_to_datetime(time.time()))
+    exist_file_paths = cache.get_all_unmodified_cached_file_paths(file_handle_id)
+    assert normalize_path(file_path) not in exist_file_paths
