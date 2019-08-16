@@ -99,8 +99,8 @@ class SynapseBaseClient:
 
     def put(self,
             request_path: str,
-            request_body: dict,
             *,
+            request_body: dict = None,
             request_parameters: dict = None,
             endpoint: str = None,
             headers: dict = None
@@ -129,8 +129,8 @@ class SynapseBaseClient:
 
     def post(self,
              request_path: str,
-             request_body: dict,
              *,
+             request_body: dict = None,
              request_parameters: dict = None,
              endpoint: str = None,
              headers: dict = None
@@ -203,6 +203,12 @@ class SynapseBaseClient:
         :return: the File Handle created in Synapse
         :raises SynapseClientError: please see each error message
         """
+        validate_type(str, path, "path")
+        validate_type(str, content_type, "content_type")
+
+
+
+
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],

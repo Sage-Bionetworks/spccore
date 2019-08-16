@@ -69,6 +69,18 @@ class TestLock:
             mock_getcwd.assert_not_called()
             mock_join.assert_called_once_with(cwd, name + "." + LOCK_FILE_SUFFIX)
 
+    # _update_lock_time
+    def test_update_lock_time(self, lock):
+        lock_time = 1
+        with patch.object(time, "sleep") as mock_sleep, \
+                patch.object(time, "time", return_value=lock_time) as mock_time, \
+                patch.object(os, "utime") as mock_utime:
+            lock._update_lock_time()
+            mock_sleep.assert_called_once_with(LOCK_UPDATE_WAIT_TIME_SEC)
+            mock_time.assert_called_once_with()
+            mock_utime.assert_called_once_with(lock.lock_dir_path, (0, lock_time))
+            assert lock.last_updated_time == from_epoch_time_to_iso(lock_time)
+
     # _has_lock
     def test_private_has_lock(self, lock):
         lock.last_updated_time = from_epoch_time_to_iso(0)

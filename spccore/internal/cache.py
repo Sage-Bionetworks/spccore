@@ -50,7 +50,8 @@ class Cache:
         cache_dir = self.get_cache_dir(file_handle_id)
         if not os.path.exists(cache_dir):
             return []
-        return _get_all_non_modified_paths(cache_dir)
+        with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
+            return _get_all_non_modified_paths(cache_dir)
 
     def register(self, file_handle_id: int, file_path: str) -> dict:
         """
@@ -71,8 +72,9 @@ class Cache:
         file_path = normalize_path(file_path)
         modified_time = get_modified_time_in_iso(file_path)
 
-        with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
+        with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir) as lock:
             cache_map = _get_cache_map(cache_dir)
+            _renew_lock(lock)
             cache_map[file_path] = modified_time
             _write_cache_map(cache_map, cache_dir)
 
@@ -103,13 +105,13 @@ class Cache:
 
         with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir) as lock:
             cache_map = _get_cache_map(cache_dir)
+            _renew_lock(lock)
 
             if file_path is None:
                 for path in cache_map:
                     if delete_file is True and os.path.exists(path):
                         os.remove(path)
-                        if not lock.renew():
-                            raise LockException("Failed to renew lock")
+                        _renew_lock(lock)
                     removed.append(path)
                 cache_map = {}
             elif file_path in cache_map:
@@ -156,23 +158,28 @@ def _purge_cache_dir(before_date: datetime.datetime, cache_dir: str, dry_run: bo
     remain_map = {}
     with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir) as lock:
         cache_map = _get_cache_map(cache_dir)
+        _renew_lock(lock)
+
         for file_path, cache_time in cache_map.items():
             if before_date > from_iso_to_datetime(cache_time):
                 if not dry_run and os.path.exists(file_path):
                     os.remove(file_path)
-                    if not lock.renew():
-                        raise LockException("Failed to renew lock")
+                    _renew_lock(lock)
                 removed.append(file_path)
             else:
                 remain_map[file_path] = cache_time
+
         if not dry_run:
             if not remain_map:
                 shutil.rmtree(cache_dir)
-                if not lock.renew():
-                    raise LockException("Failed to renew lock")
             else:
                 _write_cache_map(remain_map, cache_dir)
     return removed
+
+
+def _renew_lock(lock: Lock):
+    if not lock.renew():
+        raise LockException("Failed to renew lock")
 
 
 def _get_all_non_modified_paths(cache_dir: str) -> typing.List[str]:
@@ -201,9 +208,8 @@ def _get_cache_map(cache_dir: str) -> dict:
 
     if not os.path.exists(cache_map_file_path):
         return {}
-    with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
-        with open(cache_map_file_path, 'r') as f:
-            cache_map = json.load(f)
+    with open(cache_map_file_path, 'r') as f:
+        cache_map = json.load(f)
     return cache_map
 
 
@@ -219,10 +225,9 @@ def _write_cache_map(cache_map: dict, cache_dir: str) -> None:
 
     cache_map_file = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
 
-    with Lock(SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME, current_working_directory=cache_dir):
-        with open(cache_map_file, 'w') as f:
-            json.dump(cache_map, f)
-            f.write('\n')  # For compatibility with R's JSON parser
+    with open(cache_map_file, 'w') as f:
+        json.dump(cache_map, f)
+        f.write('\n')  # For compatibility with R's JSON parser
 
 
 def _is_modified(cache_dir: str, file_path: str) -> bool:

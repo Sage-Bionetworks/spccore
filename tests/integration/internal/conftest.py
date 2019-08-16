@@ -11,8 +11,10 @@ def cache() -> Cache:
     cache = Cache(cache_root_dir=TEST_CACHE_ROOT_DIR)
     cache.purge(from_epoch_time_to_datetime(time.time()))
     yield cache
-    cache.purge(from_epoch_time_to_datetime(time.time()))
-    shutil.rmtree(TEST_CACHE_ROOT_DIR)
+    try:
+        shutil.rmtree(TEST_CACHE_ROOT_DIR)
+    except OSError:
+        pass
 
 
 @pytest.fixture
@@ -21,7 +23,10 @@ def file_path() -> str:
     with open(file_name, 'w') as f:
         f.write("some text")
     yield file_name
-    os.remove(file_name)
+    try:
+        os.remove(file_name)
+    except OSError:
+        pass
 
 
 @pytest.fixture
