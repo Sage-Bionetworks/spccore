@@ -140,9 +140,9 @@ def test_get_base_client():
                              file_endpoint=file_endpoint,
                              username=username,
                              api_key=api_key)
-    assert client._default_repo_endpoint == repo_endpoint
-    assert client._default_auth_endpoint == auth_endpoint
-    assert client._default_file_endpoint == file_endpoint
+    assert client.default_repo_endpoint == repo_endpoint
+    assert client.default_auth_endpoint == auth_endpoint
+    assert client.default_file_endpoint == file_endpoint
     assert client._username == username
     assert client._api_key == base64.b64decode(api_key)
     assert client._requests_session is not None
@@ -163,9 +163,9 @@ class TestSynapseBaseClient:
                                    file_endpoint=file_endpoint,
                                    username=username,
                                    api_key=api_key)
-        assert client._default_repo_endpoint == repo_endpoint
-        assert client._default_auth_endpoint == auth_endpoint
-        assert client._default_file_endpoint == file_endpoint
+        assert client.default_repo_endpoint == repo_endpoint
+        assert client.default_auth_endpoint == auth_endpoint
+        assert client.default_file_endpoint == file_endpoint
         assert client._username == username
         assert client._api_key == base64.b64decode(api_key)
         assert client._requests_session is not None

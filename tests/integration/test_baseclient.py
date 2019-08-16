@@ -6,16 +6,16 @@ from spccore.exceptions import *
 
 def test_anonymous_connection_endpoints(anonymous_connection, test_endpoints):
     repo_endpoint, auth_endpoint, file_endpoint = test_endpoints
-    assert repo_endpoint == anonymous_connection._default_repo_endpoint
-    assert auth_endpoint == anonymous_connection._default_auth_endpoint
-    assert file_endpoint == anonymous_connection._default_file_endpoint
+    assert repo_endpoint == anonymous_connection.default_repo_endpoint
+    assert auth_endpoint == anonymous_connection.default_auth_endpoint
+    assert file_endpoint == anonymous_connection.default_file_endpoint
 
 
 def test_user_connection_endpoints(test_user_connection, test_endpoints):
     repo_endpoint, auth_endpoint, file_endpoint = test_endpoints
-    assert repo_endpoint == test_user_connection._default_repo_endpoint
-    assert auth_endpoint == test_user_connection._default_auth_endpoint
-    assert file_endpoint == test_user_connection._default_file_endpoint
+    assert repo_endpoint == test_user_connection.default_repo_endpoint
+    assert auth_endpoint == test_user_connection.default_auth_endpoint
+    assert file_endpoint == test_user_connection.default_file_endpoint
 
 
 def test_anonymous_connection_get(anonymous_connection):
