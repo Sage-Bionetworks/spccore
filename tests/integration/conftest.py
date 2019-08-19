@@ -16,7 +16,7 @@ _config = None
 
 
 @pytest.fixture
-def anonymous_connection(test_endpoints) -> SynapseBaseClient:
+def anonymous_client(test_endpoints) -> SynapseBaseClient:
     """
     Retrieve the dev stack endpoint
 
@@ -27,7 +27,7 @@ def anonymous_connection(test_endpoints) -> SynapseBaseClient:
 
 
 @pytest.fixture
-def test_user_connection(test_endpoints, test_credentials) -> SynapseBaseClient:
+def test_user_client(test_endpoints, test_credentials) -> SynapseBaseClient:
     """
     Get a connection using the credentials found in the config file
 

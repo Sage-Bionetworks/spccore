@@ -1,5 +1,6 @@
 import base64
 import hmac
+import json
 import time
 import urllib.parse as urllib_parse
 from .constants import *
@@ -96,8 +97,8 @@ class SynapseBaseClient:
 
     def put(self,
             request_path: str,
-            *,
             request_body: dict = None,
+            *,
             request_parameters: dict = None,
             endpoint: str = None,
             headers: dict = None
@@ -126,8 +127,8 @@ class SynapseBaseClient:
 
     def post(self,
              request_path: str,
-             *,
              request_body: dict = None,
+             *,
              request_parameters: dict = None,
              endpoint: str = None,
              headers: dict = None
