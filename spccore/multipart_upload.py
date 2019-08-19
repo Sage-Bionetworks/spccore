@@ -1,5 +1,3 @@
-import _hashlib
-import json
 import mimetypes
 import os
 import typing
@@ -11,9 +9,32 @@ from .internal.fileutils import *
 from .utils import *
 
 
-DEFAULT_UPLOAD_PART_SIZE = 0
+DEFAULT_UPLOAD_PART_SIZE = 5*MB
+UPLOADING_STATE = 'UPLOADING'
+COMPLETE_STATE = 'COMPLETED'
+ADD_PART_STATE_SUCCESS = 'ADD_SUCCESS'
+ADD_PART_STATE_FAILED = 'ADD_FAILED'
 
 
+def multipart_upload_file(client,
+                          file_path: str,
+                          content_type: str,
+                          *,
+                          storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID):
+
+    if not os.path.exists(file_path):
+        raise ValueError("The given path does not exists.")
+    if os.path.isdir(file_path):
+        raise ValueError("The given path is not a file path.")
+
+    if content_type is None:
+        (content_type, _) = mimetypes.guess_type(file_path, strict=False)
+    if not content_type:
+        content_type = "application/octet-stream"
+
+    file_name = os.path.basename(file_path)
+    file_size = os.path.getsize(file_path)
+    md5 = get_md5_hex_digest(file_path)
 
 
 # Synapse API calls to perform multipart upload
@@ -23,7 +44,7 @@ def _multipart_upload_status(client,
                              file_name: str,
                              content_type: str,
                              file_size_byte: int,
-                             md5: _hashlib.HASH,
+                             md5_hex_digest: str,
                              *,
                              storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
                              part_size_byte: int = DEFAULT_UPLOAD_PART_SIZE,
@@ -38,7 +59,7 @@ def _multipart_upload_status(client,
     :param file_name: the name of the to-be-uploaded file
     :param content_type: the content type of the to-be-uploaded file
     :param file_size_byte: the size of the to-be-uploaded file in bytes
-    :param md5: the md5 of the to-be-uploaded file
+    :param md5_hex_digest: the hex digest of the to-be-uploaded file's md5
     :param storage_location_id: the identifier of the storage location where the file should be uploaded
     :param part_size_byte: the size of one part in bytes
     :param generate_preview: Set to False to indicate that no preview should be generated for this file. Default True.
@@ -48,10 +69,10 @@ def _multipart_upload_status(client,
     validate_type(str, file_name, "file_name")
     validate_type(str, content_type, "content_type")
     validate_type(int, file_size_byte, "file_size_byte")
-    validate_type(_hashlib.HASH, md5, "md5")
+    validate_type(str, md5_hex_digest, "md5")
 
     upload_request = {
-        'contentMD5Hex': md5,
+        'contentMD5Hex': md5_hex_digest,
         'contentType': content_type,
         'fileSizeBytes': file_size_byte,
         'partSizeBytes': part_size_byte,
@@ -64,7 +85,7 @@ def _multipart_upload_status(client,
         uri += '?forceRestart=True'
 
     return client.post(uri,
-                       request_body=json.dumps(upload_request),
+                       request_body=upload_request,
                        endpoint=client.default_file_endpoint)
 
 
@@ -92,7 +113,7 @@ def _get_batch_pre_signed_url(client,
                               'partNumbers': parts}
     uri = '/file/multipart/{uploadId}/presigned/url/batch'.format(uploadId=upload_id)
     pre_signed_url_batch = client.post(uri,
-                                       request_body=json.dumps(pre_signed_url_request),
+                                       request_body=pre_signed_url_request,
                                        endpoint=client.default_file_endpoint)
     for part in pre_signed_url_batch['partPresignedUrls']:
         yield part
@@ -120,7 +141,7 @@ def _upload_part(part_pre_signed_url: str,
 def _add_part(client,
               upload_id: int,
               part_number: int,
-              part_md5: _hashlib.HASH) -> dict:
+              part_md5_hex_digest: str) -> dict:
     """
     Adds a uploaded part to the multipart upload progress.
     See: https://docs.synapse.org/rest/PUT/file/multipart/uploadId/add/partNumber.html
@@ -128,17 +149,17 @@ def _add_part(client,
     :param client: a SynapseBaseClient
     :param upload_id: the identifier for the upload
     :param part_number: the part number to add
-    :param part_md5: the md5 of the uploaded part
+    :param part_md5_hex_digest: the hex digest of the uploaded part's md5
     :return: a dictionary that represents the AddPartResponse object
     """
     validate_type(int, upload_id, "upload_id")
     validate_type(int, part_number, "part_number")
-    validate_type(_hashlib.HASH, part_md5, "part_md5")
+    validate_type(str, part_md5_hex_digest, "part_md5_hex_digest")
 
-    uri = '/file/multipart/{upload_id}/add/{part_number}?partMD5Hex={part_md5}'.format(**{'upload_id': upload_id,
-                                                                                          'part_number': part_number,
-                                                                                          'part_md5': part_md5})
-    return client.put(uri, endpoint=client.default_file_endpoint)
+    uri = '/file/multipart/{upload_id}/add/{part_number}'.format(**{'upload_id': upload_id, 'part_number': part_number})
+    return client.put(uri,
+                      endpoint=client.default_file_endpoint,
+                      request_parameters={'partMD5Hex': part_md5_hex_digest})
 
 
 def _complete_multipart_upload(client,
