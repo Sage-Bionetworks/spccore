@@ -55,6 +55,7 @@ class SynapseBaseClient:
         :param file_endpoint: the Synapse server file endpoint
         :param username: the Synapse username
         :param api_key: the Synapse API key
+        :raises TypeError: when one or more parameters are not in their expected type
         """
         validate_type(str, repo_endpoint, "repo_endpoint")
         validate_type(str, auth_endpoint, "auth_endpoint")
@@ -84,6 +85,7 @@ class SynapseBaseClient:
         :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
+        :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
             endpoint = self._default_repo_endpoint
@@ -97,8 +99,8 @@ class SynapseBaseClient:
 
     def put(self,
             request_path: str,
-            request_body: dict,
             *,
+            request_body: dict = None,
             request_parameters: dict = None,
             endpoint: str = None,
             headers: dict = None
@@ -112,6 +114,7 @@ class SynapseBaseClient:
         :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
+        :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
             endpoint = self._default_repo_endpoint
@@ -126,8 +129,8 @@ class SynapseBaseClient:
 
     def post(self,
              request_path: str,
-             request_body: dict,
              *,
+             request_body: dict = None,
              request_parameters: dict = None,
              endpoint: str = None,
              headers: dict = None
@@ -141,6 +144,7 @@ class SynapseBaseClient:
         :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
+        :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
             endpoint = self._default_repo_endpoint
@@ -168,6 +172,7 @@ class SynapseBaseClient:
         :param endpoint: the Synapse server endpoint
         :param headers: the HTTP headers
         :return: the response body of the request
+        :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
             endpoint = self._default_repo_endpoint
@@ -196,7 +201,14 @@ class SynapseBaseClient:
             Default SYNAPSE_DEFAULT_STORAGE_LOCATION_ID
         :param use_multiple_threads: set to False to use single thread. Default True.
         :return: the File Handle created in Synapse
+        :raises SynapseClientError: please see each error message
         """
+        validate_type(str, path, "path")
+        validate_type(str, content_type, "content_type")
+
+
+
+
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],
@@ -209,6 +221,7 @@ class SynapseBaseClient:
         :param download_requests: the list of download requests
         :param use_multiple_threads: set to False to use single thread. Default True.
         :return: a map between the DownloadRequest and the result
+        :raises SynapseClientError: please see each error message
         """
 
 
@@ -230,6 +243,7 @@ def get_base_client(*,
     :param username: the Synapse username
     :param api_key: the Synapse API key
     :return: a Synapse connection
+    :raises TypeError: when one or more parameters are not in their expected type
     """
     return SynapseBaseClient(repo_endpoint=repo_endpoint,
                              auth_endpoint=auth_endpoint,
@@ -247,6 +261,7 @@ def _generate_request_url(endpoint: str, request_path: str) -> str:
     :param endpoint: the Synapse base endpoint
     :param request_path: the unique path in the URI of the resource (i.e. "/entity/syn123")
     :return: the URI of the resource
+    :raises ValueError: when one or more parameters have invalid value
     """
     if endpoint is None or request_path is None:
         raise ValueError("endpoint and request_path are required.")
@@ -269,6 +284,7 @@ def _generate_signed_headers(url: str,
     :param api_key: the user's API key to sign the request
     :param headers: the HTTP request headers
     :return: the signed headers
+    :raises ValueError: when one or more parameters have invalid value
     """
 
     if url is None:
@@ -299,6 +315,7 @@ def _handle_response(response: requests.Response) -> typing.Union[dict, str]:
 
     :param response: the response returned from requests
     :return: the response body
+    :raises SynapseClientError: please see each error message
     """
     check_status_code_and_raise_error(response)
     content_type = response.headers.get(CONTENT_TYPE_HEADER, None)

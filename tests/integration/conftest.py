@@ -1,5 +1,5 @@
 import configparser
-import os
+import pytest
 from spccore.baseclient import *
 
 
@@ -15,33 +15,36 @@ DEFAULT_CONFIG_FILE_ENDPOINT_OPT = "fileHandleEndpoint"
 _config = None
 
 
-def get_anonymous_connection() -> SynapseBaseClient:
+@pytest.fixture
+def anonymous_connection(test_endpoints) -> SynapseBaseClient:
     """
     Retrieve the dev stack endpoint
 
     :return: the dev stack endpoint
     """
-    repo, auth, file = get_test_endpoints()
-    return get_base_client(repo_endpoint=repo, auth_endpoint=auth, file_endpoint=file)
+    repo_endpoint, auth_endpoint, file_endpoint = test_endpoints
+    return get_base_client(repo_endpoint=repo_endpoint, auth_endpoint=auth_endpoint, file_endpoint=file_endpoint)
 
 
-def get_test_user_connection() -> SynapseBaseClient:
+@pytest.fixture
+def test_user_connection(test_endpoints, test_credentials) -> SynapseBaseClient:
     """
     Get a connection using the credentials found in the config file
 
     :return: the test user's connection to Synapse
     """
-    repo, auth, file = get_test_endpoints()
-    username, password = get_test_credentials()
-    api_key = _get_api_key(repo, auth, file, username, password)
-    return get_base_client(repo_endpoint=repo,
-                           auth_endpoint=auth,
-                           file_endpoint=file,
+    repo_endpoint, auth_endpoint, file_endpoint = test_endpoints
+    username, password = test_credentials
+    api_key = _get_api_key(repo_endpoint, auth_endpoint, file_endpoint, username, password)
+    return get_base_client(repo_endpoint=repo_endpoint,
+                           auth_endpoint=auth_endpoint,
+                           file_endpoint=file_endpoint,
                            username=username,
                            api_key=api_key)
 
 
-def get_test_endpoints() -> (str, str, str):
+@pytest.fixture
+def test_endpoints() -> (str, str, str):
     """
     Read ~/.synapseConfig and retrieve endpoint, test username and password
 
@@ -53,7 +56,8 @@ def get_test_endpoints() -> (str, str, str):
            config.get(DEFAULT_CONFIG_ENDPOINT_SECTION, DEFAULT_CONFIG_FILE_ENDPOINT_OPT)
 
 
-def get_test_credentials() -> (str, str):
+@pytest.fixture
+def test_credentials() -> (str, str):
     """
     Read ~/.synapseConfig and retrieve test username and password
 
