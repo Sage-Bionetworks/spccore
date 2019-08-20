@@ -1,19 +1,9 @@
 import mimetypes
-import os
 import typing
 
-import requests
-
-from .constants import SYNAPSE_DEFAULT_STORAGE_LOCATION_ID
+from .constants import *
 from .internal.fileutils import *
 from .utils import *
-
-
-DEFAULT_UPLOAD_PART_SIZE = 5*MB
-UPLOADING_STATE = 'UPLOADING'
-COMPLETE_STATE = 'COMPLETED'
-ADD_PART_STATE_SUCCESS = 'ADD_SUCCESS'
-ADD_PART_STATE_FAILED = 'ADD_FAILED'
 
 
 def multipart_upload_file(client,
@@ -47,7 +37,7 @@ def _multipart_upload_status(client,
                              md5_hex_digest: str,
                              *,
                              storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
-                             part_size_byte: int = DEFAULT_UPLOAD_PART_SIZE,
+                             part_size_byte: int = SYNAPSE_DEFAULT_UPLOAD_PART_SIZE,
                              generate_preview: bool = True,
                              force_restart: bool = False
                              ) -> dict:
@@ -80,7 +70,7 @@ def _multipart_upload_status(client,
         'storageLocationId': storage_location_id,
         'generatePreview': generate_preview
     }
-    uri = '/file/multipart'
+    uri = SYNAPSE_URL_PATH_MULTIPART_UPLOAD_STATUS
     if force_restart:
         uri += '?forceRestart=True'
 
@@ -111,7 +101,7 @@ def _get_batch_pre_signed_url(client,
 
     pre_signed_url_request = {'uploadId': upload_id,
                               'partNumbers': parts}
-    uri = '/file/multipart/{uploadId}/presigned/url/batch'.format(uploadId=upload_id)
+    uri = SYNAPSE_URL_PATH_MULTIPART_UPLOAD_GET_BATCH_PRESIGNED_URL.format(upload_id=upload_id)
     pre_signed_url_batch = client.post(uri,
                                        request_body=pre_signed_url_request,
                                        endpoint=client.default_file_endpoint)
@@ -156,7 +146,7 @@ def _add_part(client,
     validate_type(int, part_number, "part_number")
     validate_type(str, part_md5_hex_digest, "part_md5_hex_digest")
 
-    uri = '/file/multipart/{upload_id}/add/{part_number}'.format(**{'upload_id': upload_id, 'part_number': part_number})
+    uri = SYNAPSE_URL_PATH_MULTIPART_UPLOAD_ADD_PART.format(**{'upload_id': upload_id, 'part_number': part_number})
     return client.put(uri,
                       endpoint=client.default_file_endpoint,
                       request_parameters={'partMD5Hex': part_md5_hex_digest})
@@ -174,5 +164,5 @@ def _complete_multipart_upload(client,
     """
     validate_type(int, upload_id, "upload_id")
 
-    uri = '/file/multipart/{upload_id}/complete'.format(**{'upload_id': upload_id})
+    uri = SYNAPSE_URL_PATH_MULTIPART_UPLOAD_COMPLETE.format(**{'upload_id': upload_id})
     return client.put(uri, endpoint=client.default_file_endpoint)

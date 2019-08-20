@@ -1,3 +1,4 @@
+from spccore.constants import SYNAPSE_UPLOADING_STATE, SYNAPSE_COMPLETE_STATE, SYNAPSE_ADD_PART_STATE_SUCCESS
 from spccore.multipart_upload import *
 from spccore.multipart_upload import _multipart_upload_status, _get_batch_pre_signed_url, _upload_part, _add_part,\
     _complete_multipart_upload
@@ -17,7 +18,7 @@ def test_upload_single_chunk(test_user_client, tiny_file):
                                       md5_hex_digest=md5)
 
     assert status is not None
-    assert status['state'] == UPLOADING_STATE
+    assert status['state'] == SYNAPSE_UPLOADING_STATE
     upload_id = int(status['uploadId'])
 
     # get pre-signed url for chunk 1
@@ -33,9 +34,9 @@ def test_upload_single_chunk(test_user_client, tiny_file):
     # add that chunk
     add_part_response = _add_part(test_user_client, upload_id, 1, md5)
     assert add_part_response is not None
-    assert add_part_response['addPartState'] == ADD_PART_STATE_SUCCESS
+    assert add_part_response['addPartState'] == SYNAPSE_ADD_PART_STATE_SUCCESS
 
     # complete upload
     status = _complete_multipart_upload(test_user_client, upload_id)
     assert status is not None
-    assert status['state'] == COMPLETE_STATE
+    assert status['state'] == SYNAPSE_COMPLETE_STATE
