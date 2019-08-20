@@ -1,6 +1,5 @@
 import hashlib
 
-
 GB = 2**30
 MB = 2**20
 KB = 2**10
@@ -16,6 +15,7 @@ def get_md5_hex_digest(file_path: str, *, block_size_byte: int = DEFAULT_BLOCK_S
     :param file_path: The target file to calculate
     :param block_size_byte: The number of bytes to read in at once. Defaults to 2 MB.
     :returns: The hex digest of the MD5 for the given file
+    :raises FileNotFoundError: when the given file_path does not exist
     """
 
     md5 = hashlib.md5()
