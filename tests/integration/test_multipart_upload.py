@@ -1,21 +1,11 @@
-import pytest
-
 from spccore.multipart_upload import *
 from spccore.multipart_upload import _multipart_upload_status, _get_batch_pre_signed_url, _upload_part, _add_part,\
     _complete_multipart_upload
 
 
-@pytest.fixture
-def file_name():
-    file_name = "test_upload_single_chunk.txt"
-    with open(file_name, 'wb') as writer:
-        writer.write(os.urandom(200))
-    yield file_name
-    os.remove(file_name)
+def test_upload_single_chunk(test_user_client, tiny_file):
 
-
-def test_upload_single_chunk(test_user_client, file_name):
-
+    file_name, _ = tiny_file
     md5 = get_md5_hex_digest(file_name)
     content_type = "text/plain"
 

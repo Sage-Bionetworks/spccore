@@ -16,6 +16,16 @@ _config = None
 
 
 @pytest.fixture
+def tiny_file():
+    file_name = "tiny_file.txt"
+    data = os.urandom(200)
+    with open(file_name, 'wb') as writer:
+        writer.write(data)
+    yield file_name, data
+    os.remove(file_name)
+
+
+@pytest.fixture
 def anonymous_client(test_endpoints) -> SynapseBaseClient:
     """
     Retrieve the dev stack endpoint
