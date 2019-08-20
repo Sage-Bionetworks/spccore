@@ -176,6 +176,29 @@ class Lock(object):
 
     # Make the lock object a Context Manager
     def __enter__(self):
+        """
+        Important notes:
+
+        We implemented __enter__ to support using lock with the context manager syntax:
+
+        with Lock("foo"):
+            <do something while holding the lock>
+
+        However, using nested context manager for the same lock will cause the inner context manager to release the lock
+        before the outer context manager does. For example:
+
+        with Lock("foo"):
+            <command 1>
+            with Lock("foo"):
+                <command 2>
+            <command 3>
+
+        In the code above, <command 1> and <command 2> was executed while holding lock "foo". When <command 3> is
+        reached, the lock "foo" is released by the inner context manager. This usage of the lock context manager is
+        confusing to the reader and should be avoided.
+
+        :return: the reference to the lock that can be used to renew the lock.
+        """
         self.blocking_acquire()
         return self
 
