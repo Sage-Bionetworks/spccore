@@ -1,8 +1,8 @@
 import pytest
 
 from spccore.multipart_upload import *
-from spccore.multipart_upload import _multipart_upload_status, _get_batch_pre_signed_url, _upload_part, _add_part, \
-_complete_multipart_upload
+from spccore.multipart_upload import _multipart_upload_status, _get_batch_pre_signed_url, _upload_part, _add_part,\
+    _complete_multipart_upload
 
 
 @pytest.fixture
