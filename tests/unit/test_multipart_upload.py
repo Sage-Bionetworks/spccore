@@ -40,13 +40,13 @@ def upload_id():
 
 
 @pytest.fixture
-def presigned_url():
+def pre_signed_url():
     return "http://domain.com/upload/3241"
 
 
 @pytest.fixture
 def data():
-    return r'some raw data'
+    return rb'some raw data'
 
 
 @pytest.fixture
@@ -75,11 +75,11 @@ def status_request_body(file_name, content_type, small_file_size, md5):
 
 
 @pytest.fixture
-def presigned_url_batch_response(presigned_url):
+def pre_signed_url_batch_response(pre_signed_url):
     return {
         'partPresignedUrls': [
             {'partNumber': 1,
-             'uploadPresignedUrl': presigned_url}
+             'uploadPresignedUrl': pre_signed_url}
         ]
     }
 
@@ -88,12 +88,21 @@ def presigned_url_batch_response(presigned_url):
 def parts():
     return [1]
 
+
 @pytest.fixture
 def pre_signed_url_request(upload_id, parts):
     return {
         'uploadId': upload_id,
         'partNumbers': parts
     }
+
+
+@pytest.fixture
+def upload_part_response():
+    response = Mock(requests.Response)
+    response.content = "some response text"
+    return response
+
 
 # _multipart_upload_status
 def test_multipart_upload_status_invalid_file_name(client, content_type, small_file_size, md5):
@@ -182,17 +191,40 @@ def test_get_batch_pre_signed_url(client,
                                   content_type,
                                   parts,
                                   pre_signed_url_request,
-                                  presigned_url_batch_response):
-    with patch.object(client, "post", return_value=presigned_url_batch_response) as mock_post:
+                                  pre_signed_url_batch_response):
+    with patch.object(client, "post", return_value=pre_signed_url_batch_response) as mock_post:
         batch = list(_get_batch_pre_signed_url(client, upload_id, content_type, parts))
-        assert presigned_url_batch_response['partPresignedUrls'] == batch
+        assert pre_signed_url_batch_response['partPresignedUrls'] == batch
         mock_post.assert_called_once_with(
             SYNAPSE_URL_PATH_MULTIPART_UPLOAD_GET_BATCH_PRESIGNED_URL.format(upload_id=upload_id),
             request_body=pre_signed_url_request,
             endpoint=SYNAPSE_DEFAULT_FILE_ENDPOINT)
 
+
 # _upload_part
+def test_upload_part_invalid_pre_signed_url(data, upload_part_response):
+    invalid_pre_signed_url = 1
+    with patch.object(requests, "put", return_value=upload_part_response) as mock_put, \
+            pytest.raises(TypeError):
+        _upload_part(invalid_pre_signed_url, data)
+        mock_put.assert_never_called()
+
+
+def test_upload_part_invalid_data(pre_signed_url, upload_part_response):
+    invalid_data = "invalid data"
+    with patch.object(requests, "put", return_value=upload_part_response) as mock_put, \
+            pytest.raises(TypeError):
+        _upload_part(pre_signed_url, invalid_data)
+        mock_put.assert_never_called()
+
+
+def test_upload_part(pre_signed_url, data, upload_part_response):
+    with patch.object(requests, "put", return_value=upload_part_response) as mock_put:
+        _upload_part(pre_signed_url, data)
+        mock_put.assert_called_once_with(pre_signed_url, data=data)
+
 
 # _add_part
+
 
 # _complete_multipart_upload
