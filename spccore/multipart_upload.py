@@ -96,7 +96,7 @@ def _get_batch_pre_signed_url(client,
     validate_type(int, upload_id, "upload_id")
     validate_type(str, content_type, "content_type")
 
-    if len(parts) == 0:
+    if not parts or len(parts) == 0:
         return []
 
     pre_signed_url_request = {'uploadId': upload_id,

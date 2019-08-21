@@ -74,6 +74,27 @@ def status_request_body(file_name, content_type, small_file_size, md5):
     }
 
 
+@pytest.fixture
+def presigned_url_batch_response(presigned_url):
+    return {
+        'partPresignedUrls': [
+            {'partNumber': 1,
+             'uploadPresignedUrl': presigned_url}
+        ]
+    }
+
+
+@pytest.fixture
+def parts():
+    return [1]
+
+@pytest.fixture
+def pre_signed_url_request(upload_id, parts):
+    return {
+        'uploadId': upload_id,
+        'partNumbers': parts
+    }
+
 # _multipart_upload_status
 def test_multipart_upload_status_invalid_file_name(client, content_type, small_file_size, md5):
     invalid_file_name = 1
@@ -111,8 +132,8 @@ def test_multipart_upload_status(client, file_name, content_type, small_file_siz
     with patch.object(client, "post", return_value=status) as mock_post:
         assert status == _multipart_upload_status(client, file_name, content_type, small_file_size, md5)
         mock_post.assert_called_once_with(SYNAPSE_URL_PATH_MULTIPART_UPLOAD_STATUS,
-                                          endpoint=SYNAPSE_DEFAULT_FILE_ENDPOINT,
-                                          request_body=status_request_body)
+                                          request_body=status_request_body,
+                                          endpoint=SYNAPSE_DEFAULT_FILE_ENDPOINT)
 
 
 def test_multipart_upload_status_force_restart(client,
@@ -130,11 +151,45 @@ def test_multipart_upload_status_force_restart(client,
                                                   md5,
                                                   force_restart=True)
         mock_post.assert_called_once_with(SYNAPSE_URL_PATH_MULTIPART_UPLOAD_STATUS + '?forceRestart=True',
-                                          endpoint=SYNAPSE_DEFAULT_FILE_ENDPOINT,
-                                          request_body=status_request_body)
+                                          request_body=status_request_body,
+                                          endpoint=SYNAPSE_DEFAULT_FILE_ENDPOINT)
 
 
 # _get_batch_pre_signed_url
+def test_get_batch_pre_signed_url_invalid_upload_id(client, content_type):
+    with patch.object(client, "post") as mock_post, \
+            pytest.raises(TypeError):
+        assert [] == list(_get_batch_pre_signed_url(client, "invalid_upload_id", content_type, []))
+        mock_post.assert_not_called()
+
+
+def test_get_batch_pre_signed_url_invalid_content_type(client, upload_id):
+    invalid_content_type = 1
+    with patch.object(client, "post") as mock_post, \
+            pytest.raises(TypeError):
+        assert [] == list(_get_batch_pre_signed_url(client, upload_id, invalid_content_type, []))
+        mock_post.assert_not_called()
+
+
+def test_get_batch_pre_signed_url_empty_batch(client, upload_id, content_type):
+    with patch.object(client, "post") as mock_post:
+        assert [] == list(_get_batch_pre_signed_url(client, upload_id, content_type, []))
+        mock_post.assert_not_called()
+
+
+def test_get_batch_pre_signed_url(client,
+                                  upload_id,
+                                  content_type,
+                                  parts,
+                                  pre_signed_url_request,
+                                  presigned_url_batch_response):
+    with patch.object(client, "post", return_value=presigned_url_batch_response) as mock_post:
+        batch = list(_get_batch_pre_signed_url(client, upload_id, content_type, parts))
+        assert presigned_url_batch_response['partPresignedUrls'] == batch
+        mock_post.assert_called_once_with(
+            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_GET_BATCH_PRESIGNED_URL.format(upload_id=upload_id),
+            request_body=pre_signed_url_request,
+            endpoint=SYNAPSE_DEFAULT_FILE_ENDPOINT)
 
 # _upload_part
 
