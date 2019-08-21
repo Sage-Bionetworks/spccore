@@ -85,8 +85,13 @@ def pre_signed_url_batch_response(pre_signed_url):
 
 
 @pytest.fixture
-def parts():
-    return [1]
+def part_number():
+    return 1
+
+
+@pytest.fixture
+def parts(part_number):
+    return [part_number]
 
 
 @pytest.fixture
@@ -102,6 +107,15 @@ def upload_part_response():
     response = Mock(requests.Response)
     response.content = "some response text"
     return response
+
+
+@pytest.fixture
+def add_part_response(upload_id, part_number):
+    return {
+        'uploadId': upload_id,
+        'partNumber': part_number,
+        'addPartState': {SYNAPSE_ADD_PART_STATE_SUCCESS}
+    }
 
 
 # _multipart_upload_status
@@ -225,6 +239,48 @@ def test_upload_part(pre_signed_url, data, upload_part_response):
 
 
 # _add_part
+def test_add_part_invalid_upload_id(client, part_number, md5, add_part_response):
+    with patch.object(client, "put", return_value=add_part_response) as mock_put, \
+            pytest.raises(TypeError):
+        _add_part(client, "invalid_upload_id", part_number, md5)
+        mock_put.assert_never_called()
+
+
+def test_add_part_invalid_part_number(client, upload_id, md5, add_part_response):
+    with patch.object(client, "put", return_value=add_part_response) as mock_put, \
+            pytest.raises(TypeError):
+        _add_part(client, upload_id, "invalid_part_number", md5)
+        mock_put.assert_never_called()
+
+
+def test_add_part_invalid_md5(client, upload_id, part_number, add_part_response):
+    invalid_md5 = 1
+    with patch.object(client, "put", return_value=add_part_response) as mock_put, \
+            pytest.raises(TypeError):
+        _add_part(client, upload_id, part_number, invalid_md5)
+        mock_put.assert_never_called()
+
+
+def test_add_part(client, upload_id, part_number, md5, add_part_response):
+    with patch.object(client, "put", return_value=add_part_response) as mock_put:
+        assert add_part_response == _add_part(client, upload_id, part_number, md5)
+        mock_put.assert_called_once_with(
+            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_ADD_PART.format(**{'upload_id': upload_id, 'part_number': part_number}),
+            endpoint=client.default_file_endpoint,
+            request_parameters={'partMD5Hex': md5})
 
 
 # _complete_multipart_upload
+def test_complete_multipart_upload_invalid_upload_id(client, status):
+    with patch.object(client, "put", return_value=status) as mock_put, \
+            pytest.raises(TypeError):
+        _complete_multipart_upload(client, "invalid_upload_id")
+        mock_put.assert_never_called()
+
+
+def test_complete_multipart_upload(client, upload_id, status):
+    with patch.object(client, "put", return_value=status) as mock_put:
+        assert status == _complete_multipart_upload(client, upload_id)
+        mock_put.assert_called_once_with(
+            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_COMPLETE.format(**{'upload_id': upload_id}),
+            endpoint=client.default_file_endpoint)
