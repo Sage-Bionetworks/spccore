@@ -31,6 +31,7 @@ LOCK_DEFAULT_MAX_AGE = datetime.timedelta(seconds=10)
 DEFAULT_BLOCKING_TIMEOUT = datetime.timedelta(seconds=70)
 CACHE_UNLOCK_WAIT_TIME_SEC = 0.5
 LOCK_FILE_SUFFIX = 'lock'
+LOCK_UPDATE_WAIT_TIME_SEC = 0.001
 
 
 class LockException(Exception):
@@ -169,7 +170,7 @@ class Lock(object):
         :param lock: the Lock object to update
         """
         # sleep for 1 millisecond to make sure that we have a different timestamp
-        time.sleep(0.001)
+        time.sleep(LOCK_UPDATE_WAIT_TIME_SEC)
         update_time = time.time()
         os.utime(self.lock_dir_path, (0, update_time))
         self.last_updated_time = from_epoch_time_to_iso(update_time)

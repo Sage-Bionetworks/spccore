@@ -36,7 +36,7 @@ def test_private_purge_cache_dir(cache_dir, file_path):
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
         assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, False))
         mock_lock.assert_called_once_with()
-        mock_renew.assert_called_once_with()
+        assert mock_renew.call_count == 2
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_exists.assert_has_calls([call("older"), call("not_exist")])
         mock_remove.assert_called_once_with("older")
@@ -63,7 +63,7 @@ def test_private_purge_cache_dir_dry_run(cache_dir, file_path):
             patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
         assert removed == set(_purge_cache_dir(cutoff_date, cache_dir, True))
         mock_lock.assert_called_once_with()
-        mock_renew.assert_not_called()
+        mock_renew.assert_called_once_with()
         mock_get_cache_map.assert_called_once_with(cache_dir)
         mock_exists.assert_not_called()
         mock_remove.assert_not_called()
@@ -191,15 +191,13 @@ def test_private_write_cache_map_cache_dir_not_exist(cache_dir):
     with patch.object(os.path, "exists", return_value=False) as mock_exists, \
             patch.object(os, "makedirs") as mock_makedirs, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "dump") as mock_json_dump, \
-            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
+            patch.object(json, "dump") as mock_json_dump:
         _write_cache_map(to_write, cache_dir)
         mock_exists.assert_called_once_with(cache_dir)
         mock_makedirs.assert_called_once_with(cache_dir)
         mock_file.assert_called_once_with(cache_map_file, 'w')
         mock_json_dump.assert_called_once_with(to_write, mock_file())
         mock_file().write.assert_called_once_with('\n')
-        mock_lock.assert_called_once_with()
 
 
 def test_private_write_cache_map_cache_dir_exist(cache_dir):
@@ -208,15 +206,13 @@ def test_private_write_cache_map_cache_dir_exist(cache_dir):
     with patch.object(os.path, "exists", return_value=True) as mock_exists, \
             patch.object(os, "makedirs") as mock_makedirs, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "dump") as mock_json_dump, \
-            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
+            patch.object(json, "dump") as mock_json_dump:
         _write_cache_map(to_write, cache_dir)
         mock_exists.assert_called_once_with(cache_dir)
         mock_makedirs.assert_not_called()
         mock_file.assert_called_once_with(cache_map_file, 'w')
         mock_json_dump.assert_called_once_with(to_write, mock_file())
         mock_file().write.assert_called_once_with('\n')
-        mock_lock.assert_called_once_with()
 
 
 # test _get_cache_map
@@ -224,26 +220,22 @@ def test_private_get_cache_map_not_exist(cache_dir):
     cache_file_path = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
     with patch.object(os.path, "exists", return_value=False) as mock_exists, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "load") as mock_json_load, \
-            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
+            patch.object(json, "load") as mock_json_load:
         assert _get_cache_map(cache_dir) == {}
         mock_exists.assert_called_once_with(cache_file_path)
         mock_file.assert_not_called()
         mock_json_load.assert_not_called()
-        mock_lock.assert_not_called()
 
 
 def test_private_get_cache_map_exist(cache_dir):
     cache_file_path = os.path.join(cache_dir, SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME)
     with patch.object(os.path, "exists", return_value=True) as mock_exists, \
             patch("builtins.open", mock_open()) as mock_file, \
-            patch.object(json, "load", return_value={}) as mock_json_load, \
-            patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock:
+            patch.object(json, "load", return_value={}) as mock_json_load:
         assert _get_cache_map(cache_dir) == {}
         mock_exists.assert_called_once_with(cache_file_path)
         mock_file.assert_called_once_with(cache_file_path, 'r')
         mock_json_load.assert_called_once_with(mock_file())
-        mock_lock.assert_called_once_with()
 
 
 # test _get_all_non_modified_paths
@@ -332,16 +324,22 @@ class TestCache:
             cache.get_all_unmodified_cached_file_paths("123")
 
     def test_get_all_unmodified_cached_file_paths_cache_dir_not_exists(self, cache, file_handle_id, cache_dir):
-        with patch.object(os.path, "exists", return_value=False) as mock_exists, \
-             patch("spccore.internal.cache._get_all_non_modified_paths", return_value=list(cache_dir)) as mock_private:
+        with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(os.path, "exists", return_value=False) as mock_exists, \
+                patch("spccore.internal.cache._get_all_non_modified_paths",
+                      return_value=list(cache_dir)) as mock_private:
             assert cache.get_all_unmodified_cached_file_paths(file_handle_id) == list()
+            mock_lock.assert_not_called()
             mock_exists.assert_called_once_with(cache_dir)
             mock_private.assert_not_called()
 
     def test_get_all_unmodified_cached_file_paths_cache_dir_exists(self, cache, file_handle_id, cache_dir):
-        with patch.object(os.path, "exists", return_value=True) as mock_exists, \
-             patch("spccore.internal.cache._get_all_non_modified_paths", return_value=list(cache_dir)) as mock_private:
+        with patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
+                patch.object(os.path, "exists", return_value=True) as mock_exists, \
+                patch("spccore.internal.cache._get_all_non_modified_paths",
+                      return_value=list(cache_dir)) as mock_private:
             assert cache.get_all_unmodified_cached_file_paths(file_handle_id) == list(cache_dir)
+            mock_lock.assert_called_once_with()
             mock_exists.assert_called_once_with(cache_dir)
             mock_private.assert_called_once_with(cache_dir)
 
@@ -379,7 +377,8 @@ class TestCache:
                 patch("spccore.internal.cache.get_modified_time_in_iso", return_value=iso_time) as mock_get_mtime, \
                 patch.object(Lock, "blocking_acquire", return_value=True) as mock_lock, \
                 patch("spccore.internal.cache._get_cache_map", return_value={}) as mock_get_cache_map, \
-                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map:
+                patch("spccore.internal.cache._write_cache_map") as mock_write_cache_map, \
+                patch("spccore.internal.cache._renew_lock") as mock_renew:
             assert expected_cache_map == cache.register(file_handle_id, file_path)
             mock_exists.assert_called_once_with(file_path)
             mock_get_cache_dir.assert_called_once_with(file_handle_id)
@@ -387,6 +386,7 @@ class TestCache:
             mock_lock.assert_called_once_with()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with(expected_cache_map, cache_dir)
+            assert mock_renew.call_count == 1
 
     # test remove
     def test_remove_with_invalid_input(self, cache):
@@ -407,7 +407,7 @@ class TestCache:
             mock_exists.assert_not_called()
             mock_remove.assert_not_called()
             mock_lock.assert_called_once_with()
-            mock_renew.assert_not_called()
+            mock_renew.assert_called_once_with()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
@@ -444,7 +444,7 @@ class TestCache:
             mock_exists.assert_called_once_with(file_path)
             mock_remove.assert_called_once_with(file_path)
             mock_lock.assert_called_once_with()
-            mock_renew.assert_called_once_with()
+            assert mock_renew.call_count == 2
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
@@ -462,7 +462,7 @@ class TestCache:
             mock_exists.assert_called_once_with(file_path)
             mock_remove.assert_called_once_with(file_path)
             mock_lock.assert_called_once_with()
-            mock_renew.assert_not_called()
+            mock_renew.assert_called_once_with()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
@@ -479,7 +479,7 @@ class TestCache:
             mock_exists.assert_called_once_with(file_path)
             mock_remove.assert_called_once_with(file_path)
             mock_lock.assert_called_once_with()
-            mock_renew.assert_not_called()
+            mock_renew.assert_called_once_with()
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
