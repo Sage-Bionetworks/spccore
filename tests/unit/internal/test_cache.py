@@ -441,7 +441,7 @@ class TestCache:
             mock_get_cache_map.assert_called_once_with(cache_dir)
             mock_write_cache_map.assert_called_once_with({}, cache_dir)
 
-    def test_remove_all_with_failed_to_renew_lock_after_read_cache_map(self, cache, file_handle_id, cache_dir, file_path):
+    def test_remove_all_failed_to_renew_lock_after_read_cache_map(self, cache, file_handle_id, cache_dir, file_path):
         to_be_removed = {file_path: '2019-07-01T00:03:01.000Z'}
         with patch("spccore.internal.cache.Cache.get_cache_dir", return_value=cache_dir) as mock_get_cache_dir, \
                 patch.object(os.path, "exists", return_value=True) as mock_exists, \
