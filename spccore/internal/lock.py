@@ -85,7 +85,7 @@ class Lock(object):
             else:
                 doze(CACHE_UNLOCK_WAIT_TIME_SEC)
         raise LockException("Could not obtain a lock on the file cache within timeout: {timeout}."
-                            " Please try again later.".format(**{'timeout': str(timeout)}))
+                            " Please try again later.".format(timeout=str(timeout)))
 
     def release(self) -> None:
         """
@@ -184,18 +184,20 @@ class Lock(object):
         with Lock("foo"):
             <do something while holding the lock>
 
-        However, using nested context manager for the same lock will cause the inner context manager to release the lock
-        before the outer context manager does. For example:
+        However, using nested context manager for the same lock will cause the inner context manager to wait for the
+        outer lock to be released before it can acquire the lock. For example:
 
-        with Lock("foo"):
+        with Lock("foo") as lock1:
             <command 1>
-            with Lock("foo"):
+            with Lock("foo") as lock2:
                 <command 2>
             <command 3>
 
-        In the code above, <command 1> and <command 2> was executed while holding lock "foo". When <command 3> is
-        reached, the lock "foo" is released by the inner context manager. This usage of the lock context manager is
-        confusing to the reader and should be avoided.
+        In the code above, <command 1> is executed while the outer context manager holding lock1. The inner context
+        manager then waits for lock1 to be expired before it can acquire lock2. <command 2> is executed while the inner
+        context manager holding lock2. When <command 3> is reached, the lock2 is released by the inner context manager.
+        Since lock1 is expired, the outer context manager loses the lock. So <command 3> is executed without lock "foo."
+        This usage of the lock context manager is confusing to the reader and should be avoided.
 
         :return: the reference to the lock that can be used to renew the lock.
         """
