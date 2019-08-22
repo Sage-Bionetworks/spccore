@@ -106,8 +106,7 @@ def test_private_purge_cache_dir_failed_to_renew_lock_after_read_cache_map(cache
         (file_path, '2019-06-30T23:59:59.999Z'),
         ("not_exist", '2019-01-30T23:59:59.999Z')
     ])
-    removed = {file_path, "not_exist"}
-
+    
     def side_effect(path):
         values = {file_path: True, "not_exist": False}
         return values[path]
@@ -136,7 +135,6 @@ def test_private_purge_cache_dir_failed_to_renew_lock_after_removing_first_file(
         (file_path, '2019-06-30T23:59:59.999Z'),
         ("not_exist", '2019-01-30T23:59:59.999Z')
     ])
-    removed = {file_path, "not_exist"}
 
     def side_effect(path):
         values = {file_path: True, "not_exist": False}
