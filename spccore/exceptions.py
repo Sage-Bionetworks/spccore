@@ -8,6 +8,7 @@ class SynapseClientError(Exception):
         :param message: The reason why this error is raised
         :param error_code: The error code from Synapse backend
         """
+        super(SynapseClientError, self).__init__(message)
         self.message = message
         self.error_code = error_code
 

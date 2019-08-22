@@ -63,9 +63,9 @@ class SynapseBaseClient:
         validate_type(str, username, "username")
         validate_type(str, api_key, "api_key")
 
-        self._default_repo_endpoint = repo_endpoint
-        self._default_auth_endpoint = auth_endpoint
-        self._default_file_endpoint = file_endpoint
+        self.default_repo_endpoint = repo_endpoint
+        self.default_auth_endpoint = auth_endpoint
+        self.default_file_endpoint = file_endpoint
         self._username = username
         self._api_key = base64.b64decode(api_key) if api_key is not None else None
         self._requests_session = requests.Session()
@@ -88,7 +88,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.get(url,
                                                            headers=_generate_signed_headers(url,
@@ -99,8 +99,8 @@ class SynapseBaseClient:
 
     def put(self,
             request_path: str,
-            *,
             request_body: dict = None,
+            *,
             request_parameters: dict = None,
             endpoint: str = None,
             headers: dict = None
@@ -117,7 +117,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.put(url,
                                                            data=json.dumps(request_body),
@@ -129,8 +129,8 @@ class SynapseBaseClient:
 
     def post(self,
              request_path: str,
-             *,
              request_body: dict = None,
+             *,
              request_parameters: dict = None,
              endpoint: str = None,
              headers: dict = None
@@ -147,7 +147,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.post(url,
                                                             data=json.dumps(request_body),
@@ -175,7 +175,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.delete(url,
                                                               headers=_generate_signed_headers(url,
@@ -190,7 +190,7 @@ class SynapseBaseClient:
                            *,
                            generate_preview: bool = False,
                            storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
-                           use_multiple_threads: bool = True) -> dict:
+                           use_multiple_threads: bool = True):
         """
         Uploads a file to Synapse
 
