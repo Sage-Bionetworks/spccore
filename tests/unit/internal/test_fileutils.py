@@ -4,7 +4,7 @@ from unittest.mock import patch, Mock, mock_open
 from spccore.internal.fileutils import *
 
 
-def test_get_md5_hex_digest_path_does_not_exit():
+def test_get_md5_hex_digest_path_does_not_exist():
     file_name = "test_get_md5_hex_digest_path_does_not_exist.txt"
     with pytest.raises(FileNotFoundError):
         get_md5_hex_digest(file_name, block_size_byte=10)
