@@ -139,7 +139,7 @@ def test_multipart_upload_status_invalid_file_size(client, file_name, content_ty
     invalid_file_size = "invalid"
     with patch.object(client, "post") as mock_post, \
             pytest.raises(TypeError):
-        _multipart_upload_status(client, file_name, content_type, small_file_size, invalid_file_size, md5)
+        _multipart_upload_status(client, file_name, content_type, invalid_file_size, md5)
         mock_post.assert_not_called()
 
 
@@ -182,7 +182,7 @@ def test_multipart_upload_status_force_restart(client,
 def test_get_batch_pre_signed_url_invalid_upload_id(client, content_type):
     with patch.object(client, "post") as mock_post, \
             pytest.raises(TypeError):
-        assert [] == list(_get_batch_pre_signed_url(client, "invalid_upload_id", content_type, []))
+        list(_get_batch_pre_signed_url(client, "invalid_upload_id", content_type, []))
         mock_post.assert_not_called()
 
 
@@ -190,7 +190,7 @@ def test_get_batch_pre_signed_url_invalid_content_type(client, upload_id):
     invalid_content_type = 1
     with patch.object(client, "post") as mock_post, \
             pytest.raises(TypeError):
-        assert [] == list(_get_batch_pre_signed_url(client, upload_id, invalid_content_type, []))
+        list(_get_batch_pre_signed_url(client, upload_id, invalid_content_type, []))
         mock_post.assert_not_called()
 
 
@@ -265,7 +265,7 @@ def test_add_part(client, upload_id, part_number, md5, add_part_response):
     with patch.object(client, "put", return_value=add_part_response) as mock_put:
         assert add_part_response == _add_part(client, upload_id, part_number, md5)
         mock_put.assert_called_once_with(
-            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_ADD_PART.format(**{'upload_id': upload_id, 'part_number': part_number}),
+            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_ADD_PART.format(upload_id=upload_id, part_number=part_number),
             endpoint=client.default_file_endpoint,
             request_parameters={'partMD5Hex': md5})
 
@@ -282,5 +282,5 @@ def test_complete_multipart_upload(client, upload_id, status):
     with patch.object(client, "put", return_value=status) as mock_put:
         assert status == _complete_multipart_upload(client, upload_id)
         mock_put.assert_called_once_with(
-            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_COMPLETE.format(**{'upload_id': upload_id}),
+            SYNAPSE_URL_PATH_MULTIPART_UPLOAD_COMPLETE.format(upload_id=upload_id),
             endpoint=client.default_file_endpoint)

@@ -1,10 +1,9 @@
 import hashlib
 
-GB = 2**30
-MB = 2**20
-KB = 2**10
-DEFAULT_BUFFER_SIZE_BYTE = 8*KB
-DEFAULT_BLOCK_SIZE_BYTE = 2*MB
+from spccore.constants import KB, MB
+
+DEFAULT_BUFFER_SIZE_BYTE = 8 * KB
+DEFAULT_BLOCK_SIZE_BYTE = 2 * MB
 
 
 def get_md5_hex_digest(file_path: str, *, block_size_byte: int = DEFAULT_BLOCK_SIZE_BYTE) -> str:

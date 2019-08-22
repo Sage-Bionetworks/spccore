@@ -1,7 +1,6 @@
 import os
 import requests
 
-from spccore.internal.fileutils import MB
 from .__version__ import __version__
 
 
@@ -37,6 +36,10 @@ SYNAPSE_DEFAULT_CACHE_MAP_FILE_NAME = ".cacheMap"
 SYNAPSE_DEFAULT_CACHE_BUCKET_SIZE = 1000
 
 # upload
+KB = 2**10
+MB = 2**20
+GB = 2**30
+
 SYNAPSE_DEFAULT_UPLOAD_PART_SIZE = 5 * MB
 
 SYNAPSE_UPLOADING_STATE = 'UPLOADING'
