@@ -109,10 +109,10 @@ class TestLock:
             mock_getmtime.assert_called_once_with(lock.lock_dir_path)
 
     def test_private_get_age_throws_error(self, lock):
-        with pytest.raises(OSError), \
-                patch.object(time, "time", return_value=2) as mock_time, \
+        with patch.object(time, "time", return_value=2) as mock_time, \
                 patch.object(os.path, "getmtime", side_effect=OSError()) as mock_getmtime:
-            lock._get_age()
+            with pytest.raises(OSError):
+                lock._get_age()
             mock_time.assert_called_once_with()
             mock_getmtime.assert_called_once_with(lock.lock_dir_path)
 
@@ -141,15 +141,15 @@ class TestLock:
 
     def test_private_acquire_lock_with_uncaught_error(self, lock):
         utime = 1
-        with pytest.raises(OSError), \
-                patch.object(lock, "renew", return_value=False) as mock_renew, \
+        with patch.object(lock, "renew", return_value=False) as mock_renew, \
                 patch.object(os, "makedirs") as mock_makedirs, \
                 patch.object(os, "utime", side_effect=OSError()) as mock_utime, \
                 patch.object(time, "time", return_value=utime) as mock_time, \
                 patch.object(lock, "_get_age", return_value=lock.max_age.total_seconds()+1) as mock_get_age, \
                 patch.object(lock, "_has_lock", return_value=True) as mock_has_lock:
-            lock._acquire_lock()
-            mock_renew.assert_not_called()
+            with pytest.raises(OSError):
+                lock._acquire_lock()
+            mock_renew.assert_called_once_with()
             mock_makedirs.assert_called_once_with(lock.lock_dir_path)
             mock_utime.assert_called_once_with(lock.lock_dir_path, (0, utime))
             mock_time.assert_called_once_with()
@@ -269,9 +269,9 @@ class TestLock:
 
     def test_release_throws_error(self, lock):
         with patch.object(lock, "_has_lock", return_value=True) as mock_has_lock, \
-                pytest.raises(OSError), \
                 patch.object(shutil, "rmtree", side_effect=OSError()) as mock_rmtree:
-            lock.release()
+            with pytest.raises(OSError):
+                lock.release()
             mock_rmtree.assert_called_once_with(lock.lock_dir_path)
             mock_has_lock.assert_called_once_with()
 
@@ -286,13 +286,13 @@ class TestLock:
             mock_doze.assert_called_once_with(CACHE_UNLOCK_WAIT_TIME_SEC)
 
     def test_blocking_acquire_timeout(self, lock):
-        with pytest.raises(LockException), \
-                patch.object(time, "time", side_effect=(0, 1, 2)) as mock_time, \
+        with patch.object(time, "time", side_effect=(0, 1, 2)) as mock_time, \
                 patch.object(lock, "_acquire_lock", side_effect=(False, True)) as mock_acquire_lock, \
                 patch("spccore.internal.lock.doze") as mock_doze:
-            lock.blocking_acquire(timeout=datetime.timedelta(seconds=2))
+            with pytest.raises(LockException):
+                lock.blocking_acquire(timeout=datetime.timedelta(seconds=2))
             assert mock_time.call_count == 3
-            mock_acquire_lock.assert_has_calls([call(break_old_locks=True), call(break_old_locks=True)])
+            mock_acquire_lock.assert_called_once_with(break_old_locks=True)
             mock_doze.assert_called_once_with(CACHE_UNLOCK_WAIT_TIME_SEC)
 
     def test_blocking_acquire_with_no_break_old_lock(self, lock):

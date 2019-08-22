@@ -180,17 +180,17 @@ def test_multipart_upload_status_force_restart(client,
 
 # _get_batch_pre_signed_url
 def test_get_batch_pre_signed_url_invalid_upload_id(client, content_type):
-    with patch.object(client, "post") as mock_post, \
-            pytest.raises(TypeError):
-        list(_get_batch_pre_signed_url(client, "invalid_upload_id", content_type, []))
+    with patch.object(client, "post") as mock_post:
+        with pytest.raises(TypeError):
+            list(_get_batch_pre_signed_url(client, "invalid_upload_id", content_type, []))
         mock_post.assert_not_called()
 
 
 def test_get_batch_pre_signed_url_invalid_content_type(client, upload_id):
     invalid_content_type = 1
-    with patch.object(client, "post") as mock_post, \
-            pytest.raises(TypeError):
-        list(_get_batch_pre_signed_url(client, upload_id, invalid_content_type, []))
+    with patch.object(client, "post") as mock_post:
+        with pytest.raises(TypeError):
+            list(_get_batch_pre_signed_url(client, upload_id, invalid_content_type, []))
         mock_post.assert_not_called()
 
 
@@ -218,18 +218,18 @@ def test_get_batch_pre_signed_url(client,
 # _upload_part
 def test_upload_part_invalid_pre_signed_url(data, upload_part_response):
     invalid_pre_signed_url = 1
-    with patch.object(requests, "put", return_value=upload_part_response) as mock_put, \
-            pytest.raises(TypeError):
-        _upload_part(invalid_pre_signed_url, data)
-        mock_put.assert_never_called()
+    with patch.object(requests, "put", return_value=upload_part_response) as mock_put:
+        with pytest.raises(TypeError):
+            _upload_part(invalid_pre_signed_url, data)
+        mock_put.assert_not_called()
 
 
 def test_upload_part_invalid_data(pre_signed_url, upload_part_response):
     invalid_data = "invalid data"
-    with patch.object(requests, "put", return_value=upload_part_response) as mock_put, \
-            pytest.raises(TypeError):
-        _upload_part(pre_signed_url, invalid_data)
-        mock_put.assert_never_called()
+    with patch.object(requests, "put", return_value=upload_part_response) as mock_put:
+        with pytest.raises(TypeError):
+            _upload_part(pre_signed_url, invalid_data)
+        mock_put.assert_not_called()
 
 
 def test_upload_part(pre_signed_url, data, upload_part_response):
@@ -240,25 +240,25 @@ def test_upload_part(pre_signed_url, data, upload_part_response):
 
 # _add_part
 def test_add_part_invalid_upload_id(client, part_number, md5, add_part_response):
-    with patch.object(client, "put", return_value=add_part_response) as mock_put, \
-            pytest.raises(TypeError):
-        _add_part(client, "invalid_upload_id", part_number, md5)
-        mock_put.assert_never_called()
+    with patch.object(client, "put", return_value=add_part_response) as mock_put:
+        with pytest.raises(TypeError):
+            _add_part(client, "invalid_upload_id", part_number, md5)
+        mock_put.assert_not_called()
 
 
 def test_add_part_invalid_part_number(client, upload_id, md5, add_part_response):
-    with patch.object(client, "put", return_value=add_part_response) as mock_put, \
-            pytest.raises(TypeError):
-        _add_part(client, upload_id, "invalid_part_number", md5)
-        mock_put.assert_never_called()
+    with patch.object(client, "put", return_value=add_part_response) as mock_put:
+        with pytest.raises(TypeError):
+            _add_part(client, upload_id, "invalid_part_number", md5)
+        mock_put.assert_not_called()
 
 
 def test_add_part_invalid_md5(client, upload_id, part_number, add_part_response):
     invalid_md5 = 1
-    with patch.object(client, "put", return_value=add_part_response) as mock_put, \
-            pytest.raises(TypeError):
-        _add_part(client, upload_id, part_number, invalid_md5)
-        mock_put.assert_never_called()
+    with patch.object(client, "put", return_value=add_part_response) as mock_put:
+        with pytest.raises(TypeError):
+            _add_part(client, upload_id, part_number, invalid_md5)
+        mock_put.assert_not_called()
 
 
 def test_add_part(client, upload_id, part_number, md5, add_part_response):
@@ -272,10 +272,10 @@ def test_add_part(client, upload_id, part_number, md5, add_part_response):
 
 # _complete_multipart_upload
 def test_complete_multipart_upload_invalid_upload_id(client, status):
-    with patch.object(client, "put", return_value=status) as mock_put, \
-            pytest.raises(TypeError):
-        _complete_multipart_upload(client, "invalid_upload_id")
-        mock_put.assert_never_called()
+    with patch.object(client, "put", return_value=status) as mock_put:
+        with pytest.raises(TypeError):
+            _complete_multipart_upload(client, "invalid_upload_id")
+        mock_put.assert_not_called()
 
 
 def test_complete_multipart_upload(client, upload_id, status):

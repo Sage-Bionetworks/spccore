@@ -31,9 +31,9 @@ def test__enforce_user_agent_does_not_effect_other_headers():
 def test__handle_response_error():
     response = requests.Response()
     with patch('spccore.baseclient.check_status_code_and_raise_error',
-               side_effect=SynapseBadRequestError()) as mock_check_status_func, \
-         pytest.raises(SynapseBadRequestError):
-        _handle_response(response)
+               side_effect=SynapseBadRequestError()) as mock_check_status_func:
+        with pytest.raises(SynapseBadRequestError):
+            _handle_response(response)
         mock_check_status_func.assert_called_once_with(response)
 
 
