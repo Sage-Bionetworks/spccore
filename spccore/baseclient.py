@@ -1,13 +1,11 @@
 import base64
-import hashlib
 import hmac
 import json
 import time
-import typing
 import urllib.parse as urllib_parse
-from .constants import *
 from .download import *
 from .exceptions import *
+from .multipart_upload import *
 from .utils import *
 
 
@@ -185,30 +183,34 @@ class SynapseBaseClient:
                                                               params=request_parameters))
 
     def upload_file_handle(self,
-                           path: str,
+                           file_path: str,
                            content_type: str,
                            *,
-                           generate_preview: bool = False,
                            storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
-                           use_multiple_threads: bool = True):
+                           generate_preview: bool = False,
+                           force_restart: bool = False,
+                           use_multiple_threads: bool = True) -> int:
         """
         Uploads a file to Synapse
 
-        :param path: the absolute/relative path to the local file to be uploaded
+        :param file_path: the absolute/relative path to the local file to be uploaded
         :param content_type: the content type of the file
-        :param generate_preview: set to True to generate preview. Default False.
         :param storage_location_id: the ID of the Storage Location to upload to.
             Default SYNAPSE_DEFAULT_STORAGE_LOCATION_ID
+        :param generate_preview: set to True to generate preview. Default False.
+        :param force_restart: Set to True to clear all upload state for the given file. Default False.
         :param use_multiple_threads: set to False to use single thread. Default True.
-        :return: the File Handle created in Synapse
+        :return: the File Handle ID created in Synapse
+        :raises TypeError: when a given argument has unexpected type
         :raises SynapseClientError: please see each error message
         """
-        validate_type(str, path, "path")
-        validate_type(str, content_type, "content_type")
-
-
-
-
+        return multipart_upload_file(self,
+                                     file_path,
+                                     content_type,
+                                     storage_location_id=storage_location_id,
+                                     generate_preview=generate_preview,
+                                     force_restart=force_restart,
+                                     use_multiple_threads=use_multiple_threads)
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],
