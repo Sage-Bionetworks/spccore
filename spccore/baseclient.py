@@ -3,7 +3,6 @@ import hmac
 import urllib.parse as urllib_parse
 
 from .download import *
-from .exceptions import *
 from .internal.cache import *
 from .multipart_upload import *
 from .utils import *
