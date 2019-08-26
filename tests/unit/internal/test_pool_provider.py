@@ -35,6 +35,7 @@ def test_constructor():
     pool_provider = MultipleThreadsPoolProvider(3)
     assert pool_provider.pool_size == 3
 
+
 def test_constructor_invalid_pool_size():
     with pytest.raises(ValueError):
         MultipleThreadsPoolProvider(-3)

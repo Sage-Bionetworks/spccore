@@ -74,7 +74,7 @@ class SingleThreadPoolProvider(PoolProvider):
 
 class MultipleThreadsPoolProvider(PoolProvider):
 
-    def __init__(self, pool_size:int = DEFAULT_POOL_SIZE):
+    def __init__(self, pool_size: int = DEFAULT_POOL_SIZE):
         if not pool_size:
             self.pool_size = DEFAULT_POOL_SIZE
         elif pool_size > 1:
