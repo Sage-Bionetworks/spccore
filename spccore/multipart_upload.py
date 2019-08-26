@@ -76,10 +76,12 @@ def multipart_upload_file(client,
         """
         try:
             return _upload_and_add_part(client,
-                                    upload_id,
-                                    part['partNumber'],
-                                    part['uploadPresignedUrl'],
-                                    get_part_data(file_path, int(part['partNumber']), SYNAPSE_DEFAULT_UPLOAD_PART_SIZE))
+                                        upload_id,
+                                        part['partNumber'],
+                                        part['uploadPresignedUrl'],
+                                        get_part_data(file_path,
+                                                      int(part['partNumber']),
+                                                      SYNAPSE_DEFAULT_UPLOAD_PART_SIZE))
         except SynapseClientError as e:
             # non retry-able error
             if isinstance(e, SynapseBadRequestError):
