@@ -1,10 +1,10 @@
 import base64
 import hmac
-import json
-import time
 import urllib.parse as urllib_parse
+
 from .download import *
 from .exceptions import *
+from .internal.cache import *
 from .multipart_upload import *
 from .utils import *
 
@@ -67,6 +67,7 @@ class SynapseBaseClient:
         self._username = username
         self._api_key = base64.b64decode(api_key) if api_key is not None else None
         self._requests_session = requests.Session()
+        self._cache = Cache()
 
     def get(self,
             request_path: str,
@@ -204,13 +205,15 @@ class SynapseBaseClient:
         :raises TypeError: when a given argument has unexpected type
         :raises SynapseClientError: please see each error message
         """
-        return multipart_upload_file(self,
-                                     file_path,
-                                     content_type,
-                                     storage_location_id=storage_location_id,
-                                     generate_preview=generate_preview,
-                                     force_restart=force_restart,
-                                     pool_provider=pool_provider)
+        file_handle_id = multipart_upload_file(self,
+                                               file_path,
+                                               content_type,
+                                               storage_location_id=storage_location_id,
+                                               generate_preview=generate_preview,
+                                               force_restart=force_restart,
+                                               pool_provider=pool_provider)
+        self._cache.register(file_handle_id, file_path)
+        return file_handle_id
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],
