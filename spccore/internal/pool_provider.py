@@ -1,24 +1,9 @@
-"""
-This module allow us to simplify the logic of any method that can run with either multiple threads or single thread.
-
-To use this wrapper with multiple threads::
-    pool = pool_provider.get_pool()
-    try:
-        pool.map(function, iterable)
-    finally:
-        pool.terminate()
-
-To use this wrapper for single thread::
-    pool = pool_provider.get_pool(size=1)
-
-"""
-
+import abc
 import multiprocessing
 import multiprocessing.dummy
 
 
 DEFAULT_POOL_SIZE = 8
-_single_threaded = False
 
 
 class SingleThreadPool:
@@ -64,27 +49,41 @@ class SingleValue:
         return FakeLock()
 
 
-def get_pool(size: int = DEFAULT_POOL_SIZE):
+class PoolProvider(metaclass=abc.ABCMeta):
     """
-    Return a pool of thread for the given size
+    Formal interface for a pool provider.
+    """
 
-    :param size: the number of threads in the pool
-    """
-    if size is not None and size == 1:
-        global _single_threaded
-        _single_threaded = True
+    @abc.abstractmethod
+    def get_pool(self):
+        pass
+
+    @abc.abstractmethod
+    def get_value(self, type, value):
+        pass
+
+
+class SingleThreadPoolProvider(PoolProvider):
+
+    def get_pool(self):
         return SingleThreadPool()
-    elif size is None or size < 1:
-        _single_threaded = False
-        return multiprocessing.dummy.Pool(DEFAULT_POOL_SIZE)
-    else:
-        _single_threaded = False
-        return multiprocessing.dummy.Pool(size)
 
-
-def get_value(type, value):
-    """To use single thread with multiprocessing.Value syntax"""
-    if _single_threaded:
+    def get_value(self, type, value):
         return SingleValue(type, value)
-    else:
+
+
+class MultipleThreadsPoolProvider(PoolProvider):
+
+    def __init__(self, pool_size:int = DEFAULT_POOL_SIZE):
+        if not pool_size:
+            self.pool_size = DEFAULT_POOL_SIZE
+        elif pool_size > 1:
+            self.pool_size = pool_size
+        else:
+            raise ValueError("Invalid pool size for MultipleThreadsPoolProvider.")
+
+    def get_pool(self):
+        return multiprocessing.dummy.Pool(self.pool_size)
+
+    def get_value(self, type, value):
         return multiprocessing.Value(type, value)
