@@ -14,7 +14,7 @@ def multipart_upload_file(client,
                           storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
                           generate_preview: bool = False,
                           force_restart: bool = False,
-                          use_multiple_threads: bool = True) -> int:
+                          pool_provider: PoolProvider = MultipleThreadsPoolProvider()) -> int:
     """
     Upload a file to Synapse
 
@@ -24,7 +24,7 @@ def multipart_upload_file(client,
     :param storage_location_id: the ID of the storage location to upload to
     :param generate_preview: set to True to generate preview. Default False.
     :param force_restart: Set to True to clear all upload state for the given file. Default False.
-    :param use_multiple_threads: set to False to use single thread. Default True.
+    :param pool_provider: set to SingleThreadPoolProvider to use single thread. Default MultipleThreadsPoolProvider.
     :return: the File Handle ID created in Synapse
     :raises TypeError: when a given argument has unexpected type
     :raises SynapseClientError: please see each error message
@@ -60,10 +60,7 @@ def multipart_upload_file(client,
     upload_id = int(status['uploadId'])
     parts_to_upload = _parts_to_upload(status['partsState'])
 
-    if use_multiple_threads:
-        thread_pool = get_pool()
-    else:
-        thread_pool = get_pool(1)
+    thread_pool = pool_provider.get_pool()
 
     def _one_chunk_upload(part: dict):
         """

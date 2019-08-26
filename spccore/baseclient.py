@@ -189,7 +189,7 @@ class SynapseBaseClient:
                            storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
                            generate_preview: bool = False,
                            force_restart: bool = False,
-                           use_multiple_threads: bool = True) -> int:
+                           pool_provider: PoolProvider = MultipleThreadsPoolProvider()) -> int:
         """
         Uploads a file to Synapse
 
@@ -199,7 +199,7 @@ class SynapseBaseClient:
             Default SYNAPSE_DEFAULT_STORAGE_LOCATION_ID
         :param generate_preview: set to True to generate preview. Default False.
         :param force_restart: Set to True to clear all upload state for the given file. Default False.
-        :param use_multiple_threads: set to False to use single thread. Default True.
+        :param pool_provider: set to SingleThreadPoolProvider to use single thread. Default MultipleThreadsPoolProvider.
         :return: the File Handle ID created in Synapse
         :raises TypeError: when a given argument has unexpected type
         :raises SynapseClientError: please see each error message
@@ -210,7 +210,7 @@ class SynapseBaseClient:
                                      storage_location_id=storage_location_id,
                                      generate_preview=generate_preview,
                                      force_restart=force_restart,
-                                     use_multiple_threads=use_multiple_threads)
+                                     pool_provider=pool_provider)
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],
