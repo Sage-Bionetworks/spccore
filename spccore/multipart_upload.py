@@ -2,9 +2,14 @@ import mimetypes
 import typing
 
 from .constants import *
+from .exceptions import *
 from .internal.fileutils import *
 from .internal.pool_provider import *
 from .utils import *
+
+
+MAX_RETRIES = 5
+RETRY_ERROR_MESSAGE = "Failed to upload after {max_retries} retries.".format(max_retries=MAX_RETRIES)
 
 
 def multipart_upload_file(client,
@@ -61,6 +66,7 @@ def multipart_upload_file(client,
     parts_to_upload = _parts_to_upload(status['partsState'])
 
     thread_pool = pool_provider.get_pool()
+    try_counter = 0
 
     def _one_chunk_upload(part: dict):
         """
@@ -68,14 +74,20 @@ def multipart_upload_file(client,
 
         :param part: an item in BatchPresignedUploadUrlResponse's partPresignedUrls
         """
-        return _upload_and_add_part(client,
+        try:
+            return _upload_and_add_part(client,
                                     upload_id,
                                     part['partNumber'],
                                     part['uploadPresignedUrl'],
                                     get_part_data(file_path, int(part['partNumber']), SYNAPSE_DEFAULT_UPLOAD_PART_SIZE))
+        except SynapseClientError as e:
+            # non retry-able error
+            if isinstance(e, SynapseBadRequestError):
+                raise
 
     # Step 2: upload parts
-    while parts_to_upload and len(parts_to_upload) > 0:
+    while parts_to_upload and try_counter < MAX_RETRIES:
+        try_counter += 1
         pre_signed_urls_generator = _get_batch_pre_signed_url(client, upload_id, content_type, parts_to_upload)
 
         thread_pool.map(_one_chunk_upload, pre_signed_urls_generator)
@@ -87,6 +99,9 @@ def multipart_upload_file(client,
                                           storage_location_id=storage_location_id,
                                           generate_preview=generate_preview)
         parts_to_upload = _parts_to_upload(status['partsState'])
+
+    if parts_to_upload and try_counter == MAX_RETRIES:
+        raise SynapseClientError(message=RETRY_ERROR_MESSAGE)
 
     # Step 3: complete multipart upload
     status = _complete_multipart_upload(client, upload_id)
