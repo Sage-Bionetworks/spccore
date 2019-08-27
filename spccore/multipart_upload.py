@@ -10,6 +10,7 @@ from .utils import *
 
 MAX_RETRIES = 5
 RETRY_ERROR_MESSAGE = "Failed to upload after {max_retries} retries.".format(max_retries=MAX_RETRIES)
+OCTET_STREAM_CONTENT_TYPE = "application/octet-stream"
 
 
 def multipart_upload_file(client,
@@ -45,7 +46,7 @@ def multipart_upload_file(client,
     if content_type is None:
         (content_type, _) = mimetypes.guess_type(file_path, strict=False)
     if not content_type:
-        content_type = "application/octet-stream"
+        content_type = OCTET_STREAM_CONTENT_TYPE
 
     file_name = os.path.basename(file_path)
     file_size = os.path.getsize(file_path)
