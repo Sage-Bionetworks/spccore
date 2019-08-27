@@ -454,7 +454,7 @@ def test_multipart_upload_file_path_does_not_exist(client, file_name, small_file
                   return_value=pre_signed_url_generator) as mock_get_pre_signed_url, \
             patch('spccore.multipart_upload._complete_multipart_upload',
                   return_value=completed_status) as mock_complete:
-        with  pytest.raises(ValueError):
+        with pytest.raises(ValueError):
             multipart_upload_file(client, file_name, content_type)
         mock_exist.assert_called_once_with(file_name)
         mock_isdir.assert_not_called()
@@ -490,7 +490,7 @@ def test_multipart_upload_file_path_is_dir(client, file_name, small_file_size, c
                   return_value=pre_signed_url_generator) as mock_get_pre_signed_url, \
             patch('spccore.multipart_upload._complete_multipart_upload',
                   return_value=completed_status) as mock_complete:
-        with  pytest.raises(ValueError):
+        with pytest.raises(ValueError):
             multipart_upload_file(client, file_name, content_type)
         mock_exist.assert_called_once_with(file_name)
         mock_isdir.assert_called_once_with(file_name)
