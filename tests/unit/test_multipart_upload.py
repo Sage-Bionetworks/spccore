@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from spccore.baseclient import SynapseBaseClient
 from spccore.multipart_upload import *
 from spccore.multipart_upload import _multipart_upload_status, _get_batch_pre_signed_url, _upload_part, _add_part,\
-    _complete_multipart_upload
+    _complete_multipart_upload, _upload_and_add_part, _parts_to_upload
 
 
 @pytest.fixture
@@ -284,3 +284,23 @@ def test_complete_multipart_upload(client, upload_id, status):
         mock_put.assert_called_once_with(
             SYNAPSE_URL_PATH_MULTIPART_UPLOAD_COMPLETE.format(upload_id=upload_id),
             endpoint=client.default_file_endpoint)
+
+
+# _upload_and_add_part
+def test_upload_and_add_part(client, upload_id, part_number, pre_signed_url, data, md5, add_part_response):
+    with patch("spccore.multipart_upload.get_md5_hex_digest_for_bytes", return_value=md5) as mock_get_md5, \
+            patch("spccore.multipart_upload._upload_part") as mock_upload_part, \
+            patch("spccore.multipart_upload._add_part", return_value=add_part_response) as mock_add_part:
+        assert add_part_response == _upload_and_add_part(client, upload_id, part_number, pre_signed_url, data)
+        mock_get_md5.assert_called_once_with(data)
+        mock_upload_part.assert_called_once_with(pre_signed_url, data)
+        mock_add_part.assert_called_once_with(client, upload_id, part_number, md5)
+
+
+# _parts_to_upload
+def test_parts_to_upload():
+    assert [] == _parts_to_upload("")
+    assert [] == _parts_to_upload("1")
+    assert [] == _parts_to_upload("11")
+    assert [1] == _parts_to_upload("0")
+    assert [2, 3] == _parts_to_upload("100")
