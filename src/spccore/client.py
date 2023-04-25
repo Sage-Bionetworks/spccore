@@ -13,6 +13,7 @@ from spccore.constants import (
     SYNAPSE_USER_AGENT_HEADER,
 )
 from spccore.exceptions import check_status_code_and_raise_error
+from spccore.models.base_model import SynapseModel
 
 
 def _generate_request_url(server_url: str, endpoint_path: str) -> str:
@@ -212,16 +213,20 @@ class SynapseBaseClient(ABC):
 
 
 class SynapseClient(SynapseBaseClient):
-    """_summary_
+    """Synapse client"""
 
-    Args:
-        SynapseBaseClient (_type_): _description_
-    """
-
-    def get(self, synapse_model):
+    def get(self, model: SynapseModel):
         """_summary_
 
         Args:
             synapse_model (_type_): _description_
         """
+        response = self.rest_get(endpoint_path=model._get_url())
+        if isinstance(response, dict):
+            return model.from_kwargs(**response)
+        else:
+            return response
+
+    def store(self, model: SynapseModel):
+        "dataclasses.asdict(team)"
         pass
