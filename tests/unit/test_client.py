@@ -147,19 +147,129 @@ class TestSynapseBaseClient:
 
     # # post
     # The patches closet to the function has to be first
-    @patch.object(requests.Session, "get")
+    @patch.object(requests.Session, "post")
     @patch.object(client, "_handle_response")
     def test_post_use_default_endpoint(
-        self, mock_handle, mock_req_get, client_setup, test_data
+        self, mock_handle, mock_req_post, client_setup, test_data
     ):
         auth_token, tc = client_setup
         req_response, path, headers, body, params = test_data
-        mock_req_get.return_value = req_response
+        mock_req_post.return_value = req_response
         mock_handle.return_value = body
 
         with patch.object(req_response, "json", return_value={}):
-            assert tc.rest_get(path, query_parameters=params, data=body) == body
-            mock_req_get.assert_called_once_with(
+            assert (
+                tc.rest_post(path, query_parameters=params, request_body=body) == body
+            )
+            mock_req_post.assert_called_once_with(
                 SYNAPSE_DEFAULT_REPO_ENDPOINT + path, params=params, data=body
             )
+            mock_handle.assert_called_once_with(response=req_response)
+
+    @patch.object(requests.Session, "post")
+    @patch.object(client, "_handle_response")
+    def test_post_custom_endpoint(
+        self, mock_handle, mock_req_post, client_setup, test_data
+    ):
+        auth_token, tc = client_setup
+        req_response, path, headers, body, params = test_data
+        endpoint = "https://repo-dev.dev.sagebase.org/repo/v1"
+        mock_req_post.return_value = req_response
+        mock_handle.return_value = body
+
+        with patch.object(req_response, "json", return_value={}):
+            assert (
+                tc.rest_post(
+                    path,
+                    server_url=endpoint,
+                    query_parameters=params,
+                    request_body=body,
+                )
+                == body
+            )
+            mock_req_post.assert_called_once_with(
+                endpoint + path, params=params, data=body
+            )
+            mock_handle.assert_called_once_with(response=req_response)
+
+    # # put
+    # The patches closet to the function has to be first
+    @patch.object(requests.Session, "put")
+    @patch.object(client, "_handle_response")
+    def test_put_use_default_endpoint(
+        self, mock_handle, mock_req_put, client_setup, test_data
+    ):
+        auth_token, tc = client_setup
+        req_response, path, headers, body, params = test_data
+        mock_req_put.return_value = req_response
+        mock_handle.return_value = body
+
+        with patch.object(req_response, "json", return_value={}):
+            assert tc.rest_put(path, query_parameters=params, request_body=body) == body
+            mock_req_put.assert_called_once_with(
+                SYNAPSE_DEFAULT_REPO_ENDPOINT + path, params=params, data=body
+            )
+            mock_handle.assert_called_once_with(response=req_response)
+
+    @patch.object(requests.Session, "put")
+    @patch.object(client, "_handle_response")
+    def test_put_custom_endpoint(
+        self, mock_handle, mock_req_put, client_setup, test_data
+    ):
+        auth_token, tc = client_setup
+        req_response, path, headers, body, params = test_data
+        endpoint = "https://repo-dev.dev.sagebase.org/repo/v1"
+        mock_req_put.return_value = req_response
+        mock_handle.return_value = body
+
+        with patch.object(req_response, "json", return_value={}):
+            assert (
+                tc.rest_put(
+                    path,
+                    server_url=endpoint,
+                    query_parameters=params,
+                    request_body=body,
+                )
+                == body
+            )
+            mock_req_put.assert_called_once_with(
+                endpoint + path, params=params, data=body
+            )
+            mock_handle.assert_called_once_with(response=req_response)
+
+    # delete
+    @patch.object(requests.Session, "delete")
+    @patch.object(client, "_handle_response")
+    def test_delete_use_default_endpoint(
+        self, mock_handle, mock_req_get, client_setup, test_data
+    ):
+        auth_token, tc = client_setup
+        req_response, path, headers, stub_response, params = test_data
+        mock_req_get.return_value = req_response
+        mock_handle.return_value = stub_response
+
+        with patch.object(req_response, "json", return_value={}):
+            assert tc.rest_delete(path, query_parameters=params) == stub_response
+            mock_req_get.assert_called_once_with(
+                SYNAPSE_DEFAULT_REPO_ENDPOINT + path, params=params
+            )
+            mock_handle.assert_called_once_with(response=req_response)
+
+    @patch.object(requests.Session, "delete")
+    @patch.object(client, "_handle_response")
+    def test_delete_custom_endpoint(
+        self, mock_handle, mock_req_delete, client_setup, test_data
+    ):
+        auth_token, tc = client_setup
+        req_response, path, headers, stub_response, params = test_data
+        endpoint = "https://repo-dev.dev.sagebase.org/repo/v1"
+        mock_req_delete.return_value = req_response
+        mock_handle.return_value = stub_response
+
+        with patch.object(req_response, "json", return_value={}):
+            assert (
+                tc.rest_delete(path, server_url=endpoint, query_parameters=params)
+                == stub_response
+            )
+            mock_req_delete.assert_called_once_with(endpoint + path, params=params)
             mock_handle.assert_called_once_with(response=req_response)
