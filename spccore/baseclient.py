@@ -1,13 +1,10 @@
 import base64
-import hashlib
 import hmac
-import json
-import time
-import typing
 import urllib.parse as urllib_parse
-from .constants import *
+
 from .download import *
-from .exceptions import *
+from .internal.cache import *
+from .multipart_upload import *
 from .utils import *
 
 
@@ -63,12 +60,13 @@ class SynapseBaseClient:
         validate_type(str, username, "username")
         validate_type(str, api_key, "api_key")
 
-        self._default_repo_endpoint = repo_endpoint
-        self._default_auth_endpoint = auth_endpoint
-        self._default_file_endpoint = file_endpoint
+        self.default_repo_endpoint = repo_endpoint
+        self.default_auth_endpoint = auth_endpoint
+        self.default_file_endpoint = file_endpoint
         self._username = username
         self._api_key = base64.b64decode(api_key) if api_key is not None else None
         self._requests_session = requests.Session()
+        self._cache = Cache()
 
     def get(self,
             request_path: str,
@@ -88,7 +86,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.get(url,
                                                            headers=_generate_signed_headers(url,
@@ -99,8 +97,8 @@ class SynapseBaseClient:
 
     def put(self,
             request_path: str,
-            *,
             request_body: dict = None,
+            *,
             request_parameters: dict = None,
             endpoint: str = None,
             headers: dict = None
@@ -117,7 +115,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.put(url,
                                                            data=json.dumps(request_body),
@@ -129,8 +127,8 @@ class SynapseBaseClient:
 
     def post(self,
              request_path: str,
-             *,
              request_body: dict = None,
+             *,
              request_parameters: dict = None,
              endpoint: str = None,
              headers: dict = None
@@ -147,7 +145,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.post(url,
                                                             data=json.dumps(request_body),
@@ -175,7 +173,7 @@ class SynapseBaseClient:
         :raises SynapseClientError: please see each error message
         """
         if endpoint is None:
-            endpoint = self._default_repo_endpoint
+            endpoint = self.default_repo_endpoint
         url = _generate_request_url(endpoint, request_path)
         return _handle_response(self._requests_session.delete(url,
                                                               headers=_generate_signed_headers(url,
@@ -185,30 +183,36 @@ class SynapseBaseClient:
                                                               params=request_parameters))
 
     def upload_file_handle(self,
-                           path: str,
+                           file_path: str,
                            content_type: str,
                            *,
-                           generate_preview: bool = False,
                            storage_location_id: int = SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
-                           use_multiple_threads: bool = True) -> dict:
+                           generate_preview: bool = False,
+                           force_restart: bool = False,
+                           pool_provider: PoolProvider = MultipleThreadsPoolProvider()) -> int:
         """
         Uploads a file to Synapse
 
-        :param path: the absolute/relative path to the local file to be uploaded
+        :param file_path: the absolute/relative path to the local file to be uploaded
         :param content_type: the content type of the file
-        :param generate_preview: set to True to generate preview. Default False.
         :param storage_location_id: the ID of the Storage Location to upload to.
             Default SYNAPSE_DEFAULT_STORAGE_LOCATION_ID
-        :param use_multiple_threads: set to False to use single thread. Default True.
-        :return: the File Handle created in Synapse
+        :param generate_preview: set to True to generate preview. Default False.
+        :param force_restart: Set to True to clear all upload state for the given file. Default False.
+        :param pool_provider: set to SingleThreadPoolProvider to use single thread. Default MultipleThreadsPoolProvider.
+        :return: the File Handle ID created in Synapse
+        :raises TypeError: when a given argument has unexpected type
         :raises SynapseClientError: please see each error message
         """
-        validate_type(str, path, "path")
-        validate_type(str, content_type, "content_type")
-
-
-
-
+        file_handle_id = multipart_upload_file(self,
+                                               file_path,
+                                               content_type,
+                                               storage_location_id=storage_location_id,
+                                               generate_preview=generate_preview,
+                                               force_restart=force_restart,
+                                               pool_provider=pool_provider)
+        self._cache.register(file_handle_id, file_path)
+        return file_handle_id
 
     def download_file_handles(self,
                               download_requests: typing.Sequence[DownloadRequest],

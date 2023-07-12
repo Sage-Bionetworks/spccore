@@ -8,4 +8,4 @@ def validate_type(object_type: type, obj: object, name: str):
     :raises TypeError: when obj is not None, and is not an instance of object_type.
     """
     if obj is not None and not isinstance(obj, object_type):
-        raise TypeError('{name} must be of type {type}.'.format(**{'name': name, 'type': object_type}))
+        raise TypeError('{name} must be of type {type}.'.format(name=name, type=object_type))

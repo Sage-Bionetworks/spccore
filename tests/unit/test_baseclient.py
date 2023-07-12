@@ -31,9 +31,9 @@ def test__enforce_user_agent_does_not_effect_other_headers():
 def test__handle_response_error():
     response = requests.Response()
     with patch('spccore.baseclient.check_status_code_and_raise_error',
-               side_effect=SynapseBadRequestError()) as mock_check_status_func, \
-         pytest.raises(SynapseBadRequestError):
-        _handle_response(response)
+               side_effect=SynapseBadRequestError()) as mock_check_status_func:
+        with pytest.raises(SynapseBadRequestError):
+            _handle_response(response)
         mock_check_status_func.assert_called_once_with(response)
 
 
@@ -140,9 +140,9 @@ def test_get_base_client():
                              file_endpoint=file_endpoint,
                              username=username,
                              api_key=api_key)
-    assert client._default_repo_endpoint == repo_endpoint
-    assert client._default_auth_endpoint == auth_endpoint
-    assert client._default_file_endpoint == file_endpoint
+    assert client.default_repo_endpoint == repo_endpoint
+    assert client.default_auth_endpoint == auth_endpoint
+    assert client.default_file_endpoint == file_endpoint
     assert client._username == username
     assert client._api_key == base64.b64decode(api_key)
     assert client._requests_session is not None
@@ -163,9 +163,9 @@ class TestSynapseBaseClient:
                                    file_endpoint=file_endpoint,
                                    username=username,
                                    api_key=api_key)
-        assert client._default_repo_endpoint == repo_endpoint
-        assert client._default_auth_endpoint == auth_endpoint
-        assert client._default_file_endpoint == file_endpoint
+        assert client.default_repo_endpoint == repo_endpoint
+        assert client.default_auth_endpoint == auth_endpoint
+        assert client.default_file_endpoint == file_endpoint
         assert client._username == username
         assert client._api_key == base64.b64decode(api_key)
         assert client._requests_session is not None
@@ -336,3 +336,21 @@ class TestSynapseBaseClient:
                                                       username=username,
                                                       api_key=base64.b64decode(api_key),
                                                       headers=None)
+
+    def test_upload_file_handle(self, client_setup):
+        _, _, client = client_setup
+        file_handle_id = 1
+        file_path = "/path/to/upload/file.txt"
+        content_type = "text/plain"
+        pool_provider = MultipleThreadsPoolProvider()
+        with patch('spccore.baseclient.multipart_upload_file', return_value=file_handle_id) as mock_upload, \
+                patch.object(client._cache, "register") as mock_register:
+            assert file_handle_id == client.upload_file_handle(file_path, content_type, pool_provider=pool_provider)
+            mock_upload.assert_called_once_with(client,
+                                                file_path,
+                                                content_type,
+                                                storage_location_id=SYNAPSE_DEFAULT_STORAGE_LOCATION_ID,
+                                                generate_preview=False,
+                                                force_restart=False,
+                                                pool_provider=pool_provider)
+            mock_register.assert_called_once_with(file_handle_id, file_path)

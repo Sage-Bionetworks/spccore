@@ -16,7 +16,27 @@ _config = None
 
 
 @pytest.fixture
-def anonymous_connection(test_endpoints) -> SynapseBaseClient:
+def two_chunks_file():
+    file_name = "two_chunks_file.txt"
+    data = os.urandom(SYNAPSE_DEFAULT_UPLOAD_PART_SIZE+1)
+    with open(file_name, 'wb') as writer:
+        writer.write(data)
+    yield file_name, data
+    os.remove(file_name)
+
+
+@pytest.fixture
+def tiny_file():
+    file_name = "tiny_file.txt"
+    data = os.urandom(200)
+    with open(file_name, 'wb') as writer:
+        writer.write(data)
+    yield file_name, data
+    os.remove(file_name)
+
+
+@pytest.fixture
+def anonymous_client(test_endpoints) -> SynapseBaseClient:
     """
     Retrieve the dev stack endpoint
 
@@ -27,7 +47,7 @@ def anonymous_connection(test_endpoints) -> SynapseBaseClient:
 
 
 @pytest.fixture
-def test_user_connection(test_endpoints, test_credentials) -> SynapseBaseClient:
+def test_user_client(test_endpoints, test_credentials) -> SynapseBaseClient:
     """
     Get a connection using the credentials found in the config file
 
